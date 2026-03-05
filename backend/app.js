@@ -81,7 +81,7 @@ app.use(async (_req, res, next) => {
   }
 });
 
-const requestTimeout = 25000;
+const requestTimeout = 10000;
 app.use((req, res, next) => {
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
