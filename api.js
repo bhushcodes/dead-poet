@@ -152,6 +152,9 @@ class ApiService {
   logout() {
     this.user = null;
     localStorage.removeItem('user');
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+      firebase.auth().signOut().catch(() => {});
+    }
   }
 
   getUser() {

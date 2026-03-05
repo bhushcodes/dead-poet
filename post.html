@@ -245,7 +245,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script>
         function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile"><span class="user-name">' + (user.displayName || 'Profile') + '</span></a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
-        function logout() { localStorage.removeItem('user'); updateUserSection(); window.location.href = 'menu.html'; }
+        function logout() { 
+            try { firebase.auth().signOut(); } catch(e) {}
+            localStorage.removeItem('user'); 
+            updateUserSection(); 
+            window.location.href = 'menu.html'; 
+        }
         updateUserSection();
 
         const firebaseConfig = {
