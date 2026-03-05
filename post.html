@@ -21,6 +21,17 @@
         .user-btn.primary:hover { background: #d84f3a; }
         .user-avatar { width: 1.5rem; height: 1.5rem; border-radius: 50%; object-fit: cover; margin-right: 0.3rem; }
         
+        @media (max-width: 480px) {
+            .user-section { top: 0.5rem; right: 0.5rem; gap: 0.25rem; }
+            .user-btn { height: 1.8rem; padding: 0 0.7rem; font-size: 0.55rem; }
+            .user-avatar { width: 1.2rem; height: 1.2rem; margin-right: 0.2rem; }
+        }
+        
+        @media (max-width: 360px) {
+            .user-section { top: 0.4rem; right: 0.4rem; gap: 0.2rem; }
+            .user-btn { height: 1.6rem; padding: 0 0.5rem; font-size: 0.5rem; }
+        }
+        
         .interaction-bar {
             display: flex;
             gap: 1rem;
