@@ -633,7 +633,10 @@
             try {
                 const data = await fetchWithRetry(`/api/users/${currentUser.uid}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': currentUser.uid
+                    },
                     body: JSON.stringify({ displayName })
                 }, 3, 1000);
                 
@@ -666,21 +669,20 @@
                 const formData = new FormData();
                 formData.append('avatar', file);
 
-                const uploadRes = await fetch(`/api/users/${currentUser.uid}/avatar`, {
+                const data = await fetchWithRetry(`/api/users/${currentUser.uid}/avatar`, {
                     method: 'POST',
                     headers: {
                         'Authorization': currentUser.uid
                     },
                     body: formData
                 });
-                const uploadData = await parseApiJson(uploadRes);
-                if (!uploadData.success) {
-                    throw new Error(uploadData.error || 'Upload failed');
+                if (!data || !data.success) {
+                    throw new Error(data?.error || 'Upload failed');
                 }
 
-                const photoURL = uploadData.photoURL.startsWith('http')
-                    ? uploadData.photoURL
-                    : `${window.location.origin}${uploadData.photoURL}`;
+                const photoURL = data.photoURL.startsWith('http')
+                    ? data.photoURL
+                    : `${window.location.origin}${data.photoURL}`;
 
                 const authUser = firebase.auth().currentUser;
                 if (authUser) {
@@ -695,9 +697,16 @@
                     },
                     body: JSON.stringify({ photoURL })
                 });
-                const saveData = await parseApiJson(saveRes);
-                if (!saveData.success) {
-                    throw new Error(saveData.error || 'Failed to save profile photo');
+                const saveData = await fetchWithRetry(`/api/users/${currentUser.uid}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': currentUser.uid
+                    },
+                    body: JSON.stringify({ photoURL })
+                });
+                if (!saveData || !saveData.success) {
+                    throw new Error(saveData?.error || 'Failed to save profile photo');
                 }
 
                 setLocalUser(saveData.user);
@@ -718,6 +727,7 @@
                 }
 
                 const response = await fetch(`/api/users/${currentUser.uid}`, {
+                const data = await fetchWithRetry(`/api/users/${currentUser.uid}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -725,9 +735,8 @@
                     },
                     body: JSON.stringify({ photoURL: null })
                 });
-                const data = await parseApiJson(response);
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to remove profile picture');
+                if (!data || !data.success) {
+                    throw new Error(data?.error || 'Failed to remove profile picture');
                 }
 
                 setLocalUser(data.user);
