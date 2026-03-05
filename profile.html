@@ -375,6 +375,24 @@
             return '';
         }
 
+        async function parseApiJson(response) {
+            const contentType = (response.headers.get('content-type') || '').toLowerCase();
+            const bodyText = await response.text();
+
+            if (!contentType.includes('application/json')) {
+                if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
+                    throw new Error('API returned HTML instead of JSON. Check deployment routing.');
+                }
+                throw new Error('Unexpected API response format.');
+            }
+
+            try {
+                return JSON.parse(bodyText);
+            } catch (_error) {
+                throw new Error('Invalid JSON response from API.');
+            }
+        }
+
         function setAvatar(url) {
             const avatar = document.getElementById('avatar');
             avatar.src = url && url.trim() ? url : FALLBACK_AVATAR;
@@ -409,7 +427,7 @@
                     photoURL: authUser.photoURL || providerPhoto || ''
                 })
             });
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (!data.success) {
                 throw new Error(data.error || 'Auth sync failed');
             }
@@ -426,7 +444,7 @@
 
         async function loadProfileDetails() {
             const response = await fetch(`/api/users/${currentUser.uid}`);
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (!data.success) {
                 throw new Error(data.error || 'Failed to load profile');
             }
@@ -511,7 +529,7 @@
             try {
                 if (tab === 'saved') {
                     const savedRes = await fetch(`/api/users/saved/${currentUser.uid}`);
-                    const savedData = await savedRes.json();
+                    const savedData = await parseApiJson(savedRes);
                     if (!savedData.success) {
                         throw new Error(savedData.error || 'Failed to load saved posts');
                     }
@@ -521,7 +539,7 @@
 
                 if (!activityCache) {
                     const activityRes = await fetch(`/api/users/${currentUser.uid}/activity`);
-                    const activityData = await activityRes.json();
+                    const activityData = await parseApiJson(activityRes);
                     if (!activityData.success) {
                         throw new Error(activityData.error || 'Failed to load activity');
                     }
@@ -563,7 +581,7 @@
                     },
                     body: JSON.stringify({ displayName })
                 });
-                const data = await response.json();
+                const data = await parseApiJson(response);
                 if (!data.success) {
                     throw new Error(data.error || 'Could not update profile');
                 }
@@ -599,7 +617,7 @@
                     },
                     body: formData
                 });
-                const uploadData = await uploadRes.json();
+                const uploadData = await parseApiJson(uploadRes);
                 if (!uploadData.success) {
                     throw new Error(uploadData.error || 'Upload failed');
                 }
@@ -621,7 +639,7 @@
                     },
                     body: JSON.stringify({ photoURL })
                 });
-                const saveData = await saveRes.json();
+                const saveData = await parseApiJson(saveRes);
                 if (!saveData.success) {
                     throw new Error(saveData.error || 'Failed to save profile photo');
                 }
@@ -651,7 +669,7 @@
                     },
                     body: JSON.stringify({ photoURL: null })
                 });
-                const data = await response.json();
+                const data = await parseApiJson(response);
                 if (!data.success) {
                     throw new Error(data.error || 'Failed to remove profile picture');
                 }

@@ -13,6 +13,31 @@ class ApiService {
     }
   }
 
+  async parseJsonResponse(response) {
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    const bodyText = await response.text();
+
+    if (!contentType.includes('application/json')) {
+      if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
+        throw new Error('API returned HTML instead of JSON. Check Vercel project/rewrite setup.');
+      }
+      throw new Error('API returned an unexpected response.');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(bodyText);
+    } catch (_error) {
+      throw new Error('Invalid JSON response from API.');
+    }
+
+    if (!response.ok && data && data.error) {
+      throw new Error(data.error);
+    }
+
+    return data;
+  }
+
   async getPosts(category, language) {
     try {
       const params = new URLSearchParams();
@@ -20,7 +45,7 @@ class ApiService {
       if (language) params.append('language', language);
       
       const response = await fetch(`${API_BASE}/api/posts?${params}`);
-      const data = await response.json();
+      const data = await this.parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -31,7 +56,7 @@ class ApiService {
   async getPost(slug) {
     try {
       const response = await fetch(`${API_BASE}/api/posts/slug/${slug}`);
-      const data = await response.json();
+      const data = await this.parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -48,7 +73,7 @@ class ApiService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: this.user.uid })
       });
-      const data = await response.json();
+      const data = await this.parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error liking post:', error);
@@ -70,7 +95,7 @@ class ApiService {
           userPhoto: this.user.photoURL || null
         })
       });
-      const data = await response.json();
+      const data = await this.parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error commenting:', error);
@@ -87,7 +112,7 @@ class ApiService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: this.user.uid, postId })
       });
-      const data = await response.json();
+      const data = await this.parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error saving post:', error);
@@ -100,7 +125,7 @@ class ApiService {
     
     try {
       const response = await fetch(`${API_BASE}/api/users/saved/${this.user.uid}`);
-      const data = await response.json();
+      const data = await this.parseJsonResponse(response);
       return data;
     } catch (error) {
       console.error('Error fetching saved posts:', error);

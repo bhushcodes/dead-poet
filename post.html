@@ -544,6 +544,24 @@
             document.getElementById('loginModal').classList.remove('active');
         }
 
+        async function parseApiJson(response) {
+            const contentType = (response.headers.get('content-type') || '').toLowerCase();
+            const bodyText = await response.text();
+
+            if (!contentType.includes('application/json')) {
+                if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
+                    throw new Error('API returned HTML instead of JSON. Check deployment routing.');
+                }
+                throw new Error('Unexpected API response format.');
+            }
+
+            try {
+                return JSON.parse(bodyText);
+            } catch (_error) {
+                throw new Error('Invalid JSON response from API.');
+            }
+        }
+
         async function signInWithGoogle() {
             firebase.initializeApp(firebaseConfig);
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -557,7 +575,7 @@
                     body: JSON.stringify({ idToken })
                 });
                 
-                const data = await response.json();
+                const data = await parseApiJson(response);
                 if (data.success) {
                     api.setUser(data.user);
                     closeLoginModal();

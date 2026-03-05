@@ -576,6 +576,24 @@
             return `${window.location.origin}${trimmed}`;
         }
 
+        async function parseApiJson(response) {
+            const contentType = (response.headers.get('content-type') || '').toLowerCase();
+            const bodyText = await response.text();
+
+            if (!contentType.includes('application/json')) {
+                if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
+                    throw new Error('API returned HTML instead of JSON. Check deployment routing.');
+                }
+                throw new Error('Unexpected API response format.');
+            }
+
+            try {
+                return JSON.parse(bodyText);
+            } catch (_error) {
+                throw new Error('Invalid JSON response from API.');
+            }
+        }
+
         function updateAdminUserHeader() {
             if (!currentUser) {
                 return;
@@ -608,7 +626,7 @@
                 })
             });
 
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (!response.ok || !data.success) {
                 throw new Error(data.error || 'Could not sync session');
             }
@@ -686,7 +704,7 @@
                     body: formData
                 });
 
-                const uploadData = await uploadRes.json();
+                const uploadData = await parseApiJson(uploadRes);
                 if (!uploadData.success) {
                     throw new Error(uploadData.error || 'Upload failed');
                 }
@@ -710,7 +728,7 @@
                     body: JSON.stringify({ photoURL })
                 });
 
-                const saveData = await saveRes.json();
+                const saveData = await parseApiJson(saveRes);
                 if (!saveData.success) {
                     throw new Error(saveData.error || 'Could not save avatar');
                 }
@@ -756,7 +774,7 @@
 
         async function loadDashboard() {
             const response = await fetch('/api/analytics/overview');
-            const data = await response.json();
+            const data = await parseApiJson(response);
             
             if (data.success) {
                 document.getElementById('statPosts').textContent = data.analytics.totalPosts;
@@ -768,7 +786,7 @@
             }
             
             const popularResponse = await fetch('/api/analytics/posts?type=views');
-            const popularData = await popularResponse.json();
+            const popularData = await parseApiJson(popularResponse);
             
             if (popularData.success) {
                 document.getElementById('popularPosts').innerHTML = popularData.posts.map(post => `
@@ -787,7 +805,7 @@
             const response = await fetch('/api/admin/posts', {
                 headers: { 'Authorization': currentUser.uid }
             });
-            const data = await response.json();
+            const data = await parseApiJson(response);
             
             if (data.success) {
                 document.getElementById('allPosts').innerHTML = data.posts.map(post => `
@@ -812,7 +830,7 @@
             const response = await fetch('/api/admin/users', {
                 headers: { 'Authorization': currentUser.uid }
             });
-            const data = await response.json();
+            const data = await parseApiJson(response);
             
             if (data.success && data.users) {
                 document.getElementById('allUsers').innerHTML = data.users.map(user => `
@@ -844,7 +862,7 @@
                 },
                 body: JSON.stringify({ role })
             });
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (data.success) {
                 alert('Role updated!');
             } else {
@@ -859,7 +877,7 @@
                 method: 'DELETE',
                 headers: { 'Authorization': currentUser.uid }
             });
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (data.success) {
                 loadUsers();
             } else {
@@ -887,7 +905,7 @@
 
         async function editPost(id) {
             const response = await fetch(`/api/posts/${id}`);
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (data.success) {
                 openPostModal(data.post);
             }
@@ -900,7 +918,7 @@
                 method: 'DELETE',
                 headers: { 'Authorization': currentUser.uid }
             });
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (data.success) {
                 loadPosts();
             } else {
@@ -935,7 +953,7 @@
                 body: JSON.stringify(postData)
             });
             
-            const data = await response.json();
+            const data = await parseApiJson(response);
             if (data.success) {
                 closePostModal();
                 loadPosts();
