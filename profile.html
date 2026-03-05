@@ -603,6 +603,11 @@
             event.preventDefault();
             setStatus('profileStatus', '', null);
 
+            if (!currentUser || !currentUser.uid) {
+                setStatus('profileStatus', 'Please login first.', 'is-error');
+                return;
+            }
+
             const displayName = document.getElementById('displayName').value.trim();
             if (!displayName) {
                 setStatus('profileStatus', 'Please enter a valid username.', 'is-error');
@@ -623,6 +628,11 @@
                     },
                     body: JSON.stringify({ displayName })
                 });
+                
+                if (!response.ok) {
+                    throw new Error('Could not update profile');
+                }
+                
                 const data = await parseApiJson(response);
                 if (!data.success) {
                     throw new Error(data.error || 'Could not update profile');
