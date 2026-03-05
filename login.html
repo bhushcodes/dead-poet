@@ -254,7 +254,7 @@
                 .map((provider) => provider && provider.displayName)
                 .find((value) => typeof value === 'string' && value.trim()) || '';
 
-            const localFallbackUser = {
+            const localUser = {
                 uid: user.uid,
                 email: user.email || '',
                 displayName: user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
@@ -262,49 +262,57 @@
                 role: 'user'
             };
 
-            const idToken = await user.getIdToken();
-            let lastError = null;
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken,
+                        email: user.email || '',
+                        displayName: user.displayName || providerName || '',
+                        photoURL: user.photoURL || providerPhoto || ''
+                    })
+                });
 
-            for (let attempt = 0; attempt < 2; attempt += 1) {
-                try {
-                    const response = await fetch('/api/auth/google', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            idToken,
-                            email: user.email || '',
-                            displayName: user.displayName || providerName || '',
-                            photoURL: user.photoURL || providerPhoto || ''
-                        })
-                    });
-
-                    const data = await parseApiJson(response);
-                    if (!response.ok || !data.success) {
-                        throw new Error(data.error || 'Could not sync login with backend');
-                    }
-
+                const data = await parseApiJson(response);
+                if (response.ok && data.success && data.user) {
                     const mergedUser = {
                         ...data.user,
                         displayName: data.user.displayName || user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
                         email: data.user.email || user.email || '',
                         photoURL: data.user.photoURL || user.photoURL || providerPhoto || ''
                     };
-
                     localStorage.setItem('user', JSON.stringify(mergedUser));
                     return mergedUser;
-                } catch (error) {
-                    lastError = error;
-                    if (attempt === 0) {
-                        await new Promise((resolve) => setTimeout(resolve, 300));
-                        continue;
-                    }
                 }
+            } catch (e) {
+                console.warn('Backend sync failed, trying sync endpoint:', e.message);
             }
 
-            if (lastError) {
-                localStorage.setItem('user', JSON.stringify(localFallbackUser));
-                return localFallbackUser;
+            try {
+                const syncResponse = await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: user.uid,
+                        email: user.email || '',
+                        displayName: user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
+                        photoURL: user.photoURL || providerPhoto || ''
+                    })
+                });
+
+                const syncData = await parseApiJson(syncResponse);
+                if (syncResponse.ok && syncData.success && syncData.user) {
+                    localStorage.setItem('user', JSON.stringify(syncData.user));
+                    return syncData.user;
+                }
+            } catch (e) {
+                console.warn('Sync endpoint also failed:', e.message);
             }
+
+            localStorage.setItem('user', JSON.stringify(localUser));
+            return localUser;
         }
 
         async function completeLogin(user, successText) {

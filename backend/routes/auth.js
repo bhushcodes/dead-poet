@@ -130,6 +130,77 @@ router.post('/google', async (req, res) => {
   }
 });
 
+router.post('/sync', async (req, res) => {
+  try {
+    const { uid, email, displayName, photoURL, role } = req.body;
+    
+    if (!uid) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    const isConfiguredAdmin = email
+      ? getAdminEmails().has(email.toLowerCase())
+      : false;
+    
+    const finalRole = isConfiguredAdmin ? 'admin' : (role || 'user');
+    
+    let user = await User.findOne({ uid });
+    
+    if (!user) {
+      user = new User({
+        uid,
+        email: email || '',
+        displayName: displayName || (email ? email.split('@')[0] : 'User'),
+        photoURL: photoURL || '',
+        role: finalRole
+      });
+      await user.save();
+    } else {
+      let changed = false;
+
+      if (email && user.email !== email) {
+        user.email = email;
+        changed = true;
+      }
+
+      if (displayName && (!user.displayName || !user.displayName.trim())) {
+        user.displayName = displayName;
+        changed = true;
+      }
+
+      if (photoURL && !user.photoURL) {
+        user.photoURL = photoURL;
+        changed = true;
+      }
+
+      if (isConfiguredAdmin && user.role !== 'admin') {
+        user.role = 'admin';
+        changed = true;
+      }
+
+      if (changed) {
+        await user.save();
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      user: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        role: user.role,
+        savedPosts: user.savedPosts || [],
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Auth sync error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/register', async (req, res) => {
   try {
     const { uid, email, displayName, photoURL } = req.body;

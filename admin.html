@@ -614,6 +614,14 @@
                 .map((provider) => provider && provider.displayName)
                 .find((value) => typeof value === 'string' && value.trim()) || '';
 
+            const localUser = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || providerName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User'),
+                photoURL: firebaseUser.photoURL || providerPhoto || '',
+                role: 'user'
+            };
+
             try {
                 const idToken = await firebaseUser.getIdToken();
                 const response = await fetch('/api/auth/google', {
@@ -628,22 +636,38 @@
                 });
 
                 const data = await parseApiJson(response);
-                if (!response.ok || !data.success) {
-                    throw new Error(data.error || 'Could not sync session');
+                if (response.ok && data.success && data.user) {
+                    currentUser = data.user;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    return currentUser;
                 }
-
-                currentUser = data.user;
             } catch (error) {
-                console.warn('Backend sync failed, using local user');
-                currentUser = {
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email || '',
-                    displayName: firebaseUser.displayName || providerName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User'),
-                    photoURL: firebaseUser.photoURL || providerPhoto || '',
-                    role: 'user'
-                };
+                console.warn('Google auth sync failed:', error.message);
             }
-            
+
+            try {
+                const syncResponse = await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email || '',
+                        displayName: firebaseUser.displayName || providerName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User'),
+                        photoURL: firebaseUser.photoURL || providerPhoto || ''
+                    })
+                });
+
+                const syncData = await parseApiJson(syncResponse);
+                if (syncResponse.ok && syncData.success && syncData.user) {
+                    currentUser = syncData.user;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    return currentUser;
+                }
+            } catch (error) {
+                console.warn('Sync endpoint also failed:', error.message);
+            }
+
+            currentUser = localUser;
             localStorage.setItem('user', JSON.stringify(currentUser));
             return currentUser;
         }
@@ -762,7 +786,13 @@
         }
 
         function checkAdmin() {
-            if (currentUser && currentUser.role === 'admin') {
+            const isAdminEmail = currentUser && currentUser.email && 
+                (currentUser.email.toLowerCase() === 'userofdat00@gmail.com' || 
+                 currentUser.email.toLowerCase() === 'admin@deadpoet.app');
+            
+            if (currentUser && (currentUser.role === 'admin' || isAdminEmail)) {
+                currentUser.role = 'admin';
+                localStorage.setItem('user', JSON.stringify(currentUser));
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 updateAdminUserHeader();

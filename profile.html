@@ -421,32 +421,62 @@
                 .map((provider) => provider && provider.displayName)
                 .find((value) => typeof value === 'string' && value.trim()) || '';
 
-            const idToken = await authUser.getIdToken();
-            const response = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    idToken,
-                    email: authUser.email || '',
-                    displayName: authUser.displayName || providerName || '',
-                    photoURL: authUser.photoURL || providerPhoto || ''
-                })
-            });
-            const data = await parseApiJson(response);
-            if (!data.success) {
-                console.warn('Backend sync failed, using local user');
-                setLocalUser(currentUser);
-                return;
-            }
-
-            const syncedUser = {
-                ...data.user,
-                displayName: firstNonEmpty(data.user.displayName, authUser.displayName, providerName, authUser.email ? authUser.email.split('@')[0] : ''),
-                email: firstNonEmpty(data.user.email, authUser.email),
-                photoURL: firstNonEmpty(data.user.photoURL, authUser.photoURL, providerPhoto)
+            const localUser = {
+                uid: authUser.uid,
+                email: authUser.email || '',
+                displayName: authUser.displayName || providerName || (authUser.email ? authUser.email.split('@')[0] : 'User'),
+                photoURL: authUser.photoURL || providerPhoto || '',
+                role: 'user'
             };
 
-            setLocalUser(syncedUser);
+            try {
+                const idToken = await authUser.getIdToken();
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken,
+                        email: authUser.email || '',
+                        displayName: authUser.displayName || providerName || '',
+                        photoURL: authUser.photoURL || providerPhoto || ''
+                    })
+                });
+                const data = await parseApiJson(response);
+                if (response.ok && data.success && data.user) {
+                    const syncedUser = {
+                        ...data.user,
+                        displayName: firstNonEmpty(data.user.displayName, authUser.displayName, providerName, authUser.email ? authUser.email.split('@')[0] : ''),
+                        email: firstNonEmpty(data.user.email, authUser.email),
+                        photoURL: firstNonEmpty(data.user.photoURL, authUser.photoURL, providerPhoto)
+                    };
+                    setLocalUser(syncedUser);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Google auth sync failed:', e.message);
+            }
+
+            try {
+                const syncResponse = await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: authUser.uid,
+                        email: authUser.email || '',
+                        displayName: authUser.displayName || providerName || (authUser.email ? authUser.email.split('@')[0] : 'User'),
+                        photoURL: authUser.photoURL || providerPhoto || ''
+                    })
+                });
+                const syncData = await parseApiJson(syncResponse);
+                if (syncResponse.ok && syncData.success && syncData.user) {
+                    setLocalUser(syncData.user);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Sync endpoint also failed:', e.message);
+            }
+
+            setLocalUser(localUser);
         }
 
         async function loadProfileDetails() {
