@@ -1,5 +1,30 @@
 const API_BASE = '';
 
+async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+          throw new Error('Server returned HTML. Retrying...');
+        }
+        throw new Error('Invalid JSON response');
+      }
+      if (!response.ok && !data.success) {
+        throw new Error(data.error || 'Request failed');
+      }
+      return { ok: response.ok, data };
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await new Promise(r => setTimeout(r, delay * (i + 1)));
+    }
+  }
+}
+
 class ApiService {
   constructor() {
     this.user = null;

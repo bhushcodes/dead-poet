@@ -331,6 +331,31 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script>
+        async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    const text = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                            throw new Error('Server returned HTML. Retrying...');
+                        }
+                        throw new Error('Invalid JSON response');
+                    }
+                    if (!response.ok && !data.success) {
+                        throw new Error(data.error || 'Request failed');
+                    }
+                    return { ok: response.ok, data };
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(r => setTimeout(r, delay * (i + 1)));
+                }
+            }
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyDUmWxwIu5FeHMXsldEPWE_nmIr_6ZRn2c",
             authDomain: "poem-20cce.firebaseapp.com",
@@ -614,26 +639,17 @@
                 return;
             }
 
+            setStatus('profileStatus', 'Updating...', null);
+
             try {
-                const response = await fetch(`/api/users/${currentUser.uid}`, {
+                const { ok, data } = await fetchWithRetry(`/api/users/${currentUser.uid}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': currentUser.uid
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ displayName })
-                });
+                }, 3, 1000);
                 
-                let data;
-                try {
-                    data = JSON.parse(await response.text());
-                } catch (e) {
-                    setStatus('profileStatus', 'Invalid response from server', 'is-error');
-                    return;
-                }
-                
-                if (!data.success) {
-                    setStatus('profileStatus', data.error || 'Could not update profile', 'is-error');
+                if (!ok || !data.success) {
+                    setStatus('profileStatus', data?.error || 'Could not update profile', 'is-error');
                     return;
                 }
 
@@ -642,7 +658,7 @@
                 setStatus('profileStatus', 'Profile updated successfully.', 'is-success');
             } catch (error) {
                 console.error(error);
-                setStatus('profileStatus', 'Failed to update profile. Please try again.', 'is-error');
+                setStatus('profileStatus', 'Failed to update. Please try again.', 'is-error');
             }
         }
 
