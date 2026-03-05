@@ -14,77 +14,92 @@ class ApiService {
   }
 
   async parseJsonResponse(response) {
-    const contentType = (response.headers.get('content-type') || '').toLowerCase();
     const bodyText = await response.text();
-
-    if (!contentType.includes('application/json')) {
-      if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
-        throw new Error('API returned HTML instead of JSON. Check Vercel project/rewrite setup.');
-      }
-      throw new Error('API returned an unexpected response.');
-    }
+    const trimmed = bodyText.trim();
 
     let data;
     try {
       data = JSON.parse(bodyText);
     } catch (_error) {
-      throw new Error('Invalid JSON response from API.');
+      data = null;
     }
 
-    if (!response.ok && data && data.error) {
-      throw new Error(data.error);
+    if (data) {
+      if (!response.ok && data.error) {
+        const error = new Error(data.error);
+        error.retryable = data.retryable === true;
+        throw error;
+      }
+      return data;
     }
 
-    return data;
+    if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+      const error = new Error('API returned HTML instead of JSON. Check Vercel project/rewrite setup.');
+      error.retryable = true;
+      throw error;
+    }
+
+    const error = new Error(response.ok ? 'Invalid JSON response from API.' : `Request failed with status ${response.status}.`);
+    error.retryable = response.status >= 500 || response.status === 503 || response.status === 504;
+    throw error;
+  }
+
+  async fetchWithRetry(fetchFn, maxRetries = 2, delayMs = 500) {
+    let lastError = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      try {
+        const result = await fetchFn();
+        if (result.success !== false || attempt === maxRetries) {
+          return result;
+        }
+      } catch (error) {
+        lastError = error;
+        if (!error.retryable || attempt === maxRetries) {
+          return { success: false, error: error.message };
+        }
+      }
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+      }
+    }
+    return { success: false, error: lastError?.message || 'Request failed after retries' };
   }
 
   async getPosts(category, language) {
-    try {
+    return this.fetchWithRetry(async () => {
       const params = new URLSearchParams();
       if (category) params.append('category', category);
       if (language) params.append('language', language);
       
       const response = await fetch(`${API_BASE}/api/posts?${params}`);
-      const data = await this.parseJsonResponse(response);
-      return data;
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      return { success: false, error: error.message };
-    }
+      return this.parseJsonResponse(response);
+    });
   }
 
   async getPost(slug) {
-    try {
+    return this.fetchWithRetry(async () => {
       const response = await fetch(`${API_BASE}/api/posts/slug/${slug}`);
-      const data = await this.parseJsonResponse(response);
-      return data;
-    } catch (error) {
-      console.error('Error fetching post:', error);
-      return { success: false, error: error.message };
-    }
+      return this.parseJsonResponse(response);
+    });
   }
 
   async likePost(postId) {
     if (!this.user) return { success: false, error: 'Please login to like' };
     
-    try {
+    return this.fetchWithRetry(async () => {
       const response = await fetch(`${API_BASE}/api/posts/${postId}/like`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: this.user.uid })
       });
-      const data = await this.parseJsonResponse(response);
-      return data;
-    } catch (error) {
-      console.error('Error liking post:', error);
-      return { success: false, error: error.message };
-    }
+      return this.parseJsonResponse(response);
+    });
   }
 
   async commentPost(postId, text) {
     if (!this.user) return { success: false, error: 'Please login to comment' };
     
-    try {
+    return this.fetchWithRetry(async () => {
       const response = await fetch(`${API_BASE}/api/posts/${postId}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,42 +110,30 @@ class ApiService {
           userPhoto: this.user.photoURL || null
         })
       });
-      const data = await this.parseJsonResponse(response);
-      return data;
-    } catch (error) {
-      console.error('Error commenting:', error);
-      return { success: false, error: error.message };
-    }
+      return this.parseJsonResponse(response);
+    });
   }
 
   async savePost(postId) {
     if (!this.user) return { success: false, error: 'Please login to save' };
     
-    try {
+    return this.fetchWithRetry(async () => {
       const response = await fetch(`${API_BASE}/api/users/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: this.user.uid, postId })
       });
-      const data = await this.parseJsonResponse(response);
-      return data;
-    } catch (error) {
-      console.error('Error saving post:', error);
-      return { success: false, error: error.message };
-    }
+      return this.parseJsonResponse(response);
+    });
   }
 
   async getSavedPosts() {
     if (!this.user) return { success: false, error: 'Not logged in' };
     
-    try {
+    return this.fetchWithRetry(async () => {
       const response = await fetch(`${API_BASE}/api/users/saved/${this.user.uid}`);
-      const data = await this.parseJsonResponse(response);
-      return data;
-    } catch (error) {
-      console.error('Error fetching saved posts:', error);
-      return { success: false, error: error.message };
-    }
+      return this.parseJsonResponse(response);
+    });
   }
 
   async downloadPost(postId) {

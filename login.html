@@ -229,21 +229,21 @@
         }
 
         async function parseApiJson(response) {
-            const contentType = (response.headers.get('content-type') || '').toLowerCase();
             const bodyText = await response.text();
-
-            if (!contentType.includes('application/json')) {
-                if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
-                    throw new Error('API returned HTML instead of JSON. Check deployment routing.');
-                }
-                throw new Error('Unexpected API response format.');
-            }
+            const trimmed = bodyText.trim();
 
             try {
                 return JSON.parse(bodyText);
             } catch (_error) {
-                throw new Error('Invalid JSON response from API.');
             }
+
+            if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+                throw new Error('API returned HTML instead of JSON. Check deployment routing.');
+            }
+
+            throw new Error(response.ok
+                ? 'Invalid JSON response from API.'
+                : `Request failed with status ${response.status}.`);
         }
 
         async function saveBackendSession(user) {
@@ -254,32 +254,59 @@
                 .map((provider) => provider && provider.displayName)
                 .find((value) => typeof value === 'string' && value.trim()) || '';
 
-            const idToken = await user.getIdToken();
-            const response = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    idToken,
-                    email: user.email || '',
-                    displayName: user.displayName || providerName || '',
-                    photoURL: user.photoURL || providerPhoto || ''
-                })
-            });
-
-            const data = await parseApiJson(response);
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Could not sync login with backend');
-            }
-
-            const mergedUser = {
-                ...data.user,
-                displayName: data.user.displayName || user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
-                email: data.user.email || user.email || '',
-                photoURL: data.user.photoURL || user.photoURL || providerPhoto || ''
+            const localFallbackUser = {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
+                photoURL: user.photoURL || providerPhoto || '',
+                role: 'user'
             };
 
-            localStorage.setItem('user', JSON.stringify(mergedUser));
-            return mergedUser;
+            const idToken = await user.getIdToken();
+            let lastError = null;
+
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+                try {
+                    const response = await fetch('/api/auth/google', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            idToken,
+                            email: user.email || '',
+                            displayName: user.displayName || providerName || '',
+                            photoURL: user.photoURL || providerPhoto || ''
+                        })
+                    });
+
+                    const data = await parseApiJson(response);
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.error || 'Could not sync login with backend');
+                    }
+
+                    const mergedUser = {
+                        ...data.user,
+                        displayName: data.user.displayName || user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
+                        email: data.user.email || user.email || '',
+                        photoURL: data.user.photoURL || user.photoURL || providerPhoto || ''
+                    };
+
+                    localStorage.setItem('user', JSON.stringify(mergedUser));
+                    return mergedUser;
+                } catch (error) {
+                    lastError = error;
+                    if (attempt === 0) {
+                        await new Promise((resolve) => setTimeout(resolve, 300));
+                        continue;
+                    }
+                }
+            }
+
+            if (lastError && /HTML instead of JSON|status 5\d\d|Failed to fetch|Network/i.test(lastError.message || '')) {
+                localStorage.setItem('user', JSON.stringify(localFallbackUser));
+                return localFallbackUser;
+            }
+
+            throw (lastError || new Error('Could not sync login with backend'));
         }
 
         async function completeLogin(user, successText) {

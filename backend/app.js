@@ -33,6 +33,11 @@ app.use(express.urlencoded({ extended: true }));
 const uploadStaticDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadStaticDir));
 
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
 let cached = global.__mongooseConn;
 if (!cached) {
   cached = global.__mongooseConn = { conn: null, promise: null };
@@ -67,9 +72,29 @@ app.use(async (_req, res, next) => {
     await connectDB();
     next();
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    res.status(500).json({ success: false, error: 'Database connection failed' });
+    console.error('MongoDB connection error:', error.message);
+    return res.status(503).json({ 
+      success: false, 
+      error: 'Database temporarily unavailable. Please try again.',
+      retryable: true 
+    });
   }
+});
+
+const requestTimeout = 25000;
+app.use((req, res, next) => {
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      return res.status(504).json({ 
+        success: false, 
+        error: 'Request timed out. Please try again.',
+        retryable: true 
+      });
+    }
+  }, requestTimeout);
+  
+  res.on('finish', () => clearTimeout(timeout));
+  next();
 });
 
 app.use('/api/auth', require('./routes/auth'));
@@ -84,6 +109,15 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ success: false, error: 'API route not found' });
+});
+
+app.use((err, _req, res, _next) => {
+  console.error('Unhandled error:', err.message);
+  return res.status(500).json({ 
+    success: false, 
+    error: 'Internal server error. Please try again.',
+    retryable: true 
+  });
 });
 
 module.exports = app;

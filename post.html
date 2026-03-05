@@ -545,21 +545,21 @@
         }
 
         async function parseApiJson(response) {
-            const contentType = (response.headers.get('content-type') || '').toLowerCase();
             const bodyText = await response.text();
-
-            if (!contentType.includes('application/json')) {
-                if (bodyText.trim().startsWith('<!DOCTYPE') || bodyText.trim().startsWith('<html')) {
-                    throw new Error('API returned HTML instead of JSON. Check deployment routing.');
-                }
-                throw new Error('Unexpected API response format.');
-            }
+            const trimmed = bodyText.trim();
 
             try {
                 return JSON.parse(bodyText);
             } catch (_error) {
-                throw new Error('Invalid JSON response from API.');
             }
+
+            if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+                throw new Error('API returned HTML instead of JSON. Check deployment routing.');
+            }
+
+            throw new Error(response.ok
+                ? 'Invalid JSON response from API.'
+                : `Request failed with status ${response.status}.`);
         }
 
         async function signInWithGoogle() {
