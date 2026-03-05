@@ -23,8 +23,39 @@
         }
         
         @media (max-width: 360px) {
-            .user-section { top: 0.4rem; right: 0.4rem; gap: 0.2rem; }
-            .user-btn { height: 1.6rem; padding: 0 0.5rem; font-size: 0.5rem; }
+            .user-section { 
+                top: 0.4rem; 
+                right: 0.4rem; 
+                gap: 0.15rem; 
+            }
+            .user-btn { 
+                height: 1.6rem; 
+                padding: 0 0.4rem; 
+                font-size: 0.45rem; 
+            }
+            .user-btn .user-name {
+                display: none;
+            }
+            .user-section .user-btn:first-child .user-name {
+                display: inline;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .user-section {
+                gap: 0.1rem;
+            }
+            .user-btn {
+                padding: 0 0.35rem;
+                font-size: 0.4rem;
+            }
+            .user-avatar {
+                width: 1rem;
+                height: 1rem;
+            }
+            .user-btn .user-name {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -36,7 +67,7 @@
     <script src="script.js" defer></script>
     <script src="api.js" defer></script>
     <script>
-        function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile">' + (user.displayName || 'Profile') + '</a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
+        function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile"><span class="user-name">' + (user.displayName || 'Profile') + '</span></a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
         function logout() { localStorage.removeItem('user'); updateUserSection(); window.location.href = 'menu.html'; }
         updateUserSection();
         document.addEventListener('DOMContentLoaded', async () => {
