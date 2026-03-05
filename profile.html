@@ -400,24 +400,6 @@
             return '';
         }
 
-        async function parseApiJson(response) {
-            const bodyText = await response.text();
-            const trimmed = bodyText.trim();
-
-            try {
-                return JSON.parse(bodyText);
-            } catch (_error) {
-            }
-
-            if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
-                throw new Error('API returned HTML instead of JSON. Check deployment routing.');
-            }
-
-            throw new Error(response.ok
-                ? 'Invalid JSON response from API.'
-                : `Request failed with status ${response.status}.`);
-        }
-
         function setAvatar(url) {
             const avatar = document.getElementById('avatar');
             avatar.src = url && url.trim() ? url : FALLBACK_AVATAR;
@@ -642,14 +624,14 @@
             setStatus('profileStatus', 'Updating...', null);
 
             try {
-                const { ok, data } = await fetchWithRetry(`/api/users/${currentUser.uid}`, {
+                const data = await fetchWithRetry(`/api/users/${currentUser.uid}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ displayName })
                 }, 3, 1000);
                 
-                if (!ok || !data.success) {
-                    setStatus('profileStatus', data?.error || 'Could not update profile', 'is-error');
+                if (!data.success) {
+                    setStatus('profileStatus', data.error || 'Could not update profile', 'is-error');
                     return;
                 }
 
