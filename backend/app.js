@@ -45,7 +45,17 @@ async function connectDB() {
 
   if (!cached.promise) {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/deadpoet';
-    cached.promise = mongoose.connect(mongoUri).then((mongooseInstance) => mongooseInstance);
+    cached.promise = mongoose
+      .connect(mongoUri, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 10000,
+        maxPoolSize: 10
+      })
+      .then((mongooseInstance) => mongooseInstance)
+      .catch((error) => {
+        cached.promise = null;
+        throw error;
+      });
   }
 
   cached.conn = await cached.promise;
@@ -70,6 +80,10 @@ app.use('/api/analytics', require('./routes/analytics'));
 
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, message: 'API is live' });
+});
+
+app.use('/api', (_req, res) => {
+  res.status(404).json({ success: false, error: 'API route not found' });
 });
 
 module.exports = app;
