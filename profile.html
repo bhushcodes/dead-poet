@@ -445,6 +445,10 @@
         }
 
         async function loadProfileDetails() {
+            if (!currentUser || !currentUser.uid) {
+                console.warn('No user logged in');
+                return;
+            }
             const response = await fetch(`/api/users/${currentUser.uid}`);
             const data = await parseApiJson(response);
             if (!data.success) {
