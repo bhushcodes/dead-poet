@@ -1,84 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
-const User = require('../models/User');
-const { posts: defaultPosts } = require('../migrate');
-
-let seedChecked = false;
-let seedPromise = null;
-
-async function ensureSeededPosts() {
-  if (seedChecked) {
-    return;
-  }
-
-  if (seedPromise) {
-    await seedPromise;
-    return;
-  }
-
-  seedPromise = (async () => {
-    const count = await Post.countDocuments();
-
-    if (count > 0) {
-      seedChecked = true;
-      return;
-    }
-
-    if (!Array.isArray(defaultPosts) || !defaultPosts.length) {
-      seedChecked = true;
-      return;
-    }
-
-    try {
-      await Post.insertMany(defaultPosts, { ordered: false });
-      console.log(`Seeded ${defaultPosts.length} default posts`);
-    } catch (error) {
-      const hasOnlyDuplicateIssues = error && (
-        error.code === 11000 ||
-        (Array.isArray(error.writeErrors) && error.writeErrors.length > 0)
-      );
-
-      if (!hasOnlyDuplicateIssues) {
-        throw error;
-      }
-    }
-
-    seedChecked = true;
-  })();
-
-  try {
-    await seedPromise;
-  } finally {
-    seedPromise = null;
-  }
-}
-
-router.use(async (_req, _res, next) => {
-  try {
-    await ensureSeededPosts();
-  } catch (error) {
-    console.error('Post seeding failed:', error);
-  }
-  next();
-});
 
 router.get('/', async (req, res) => {
   try {
-    const { category, language, page = 1, limit = 20 } = req.query;
-    const query = { isPublished: true };
+    const { category, language } = req.query;
+    const filter = { isPublished: true };
+    if (category) filter.category = category;
+    if (language) filter.language = language;
     
-    if (category) query.category = category;
-    if (language) query.language = language;
+    const posts = await Post.find(filter).sort({ createdAt: -1 });
     
-    const posts = await Post.find(query)
-      .sort({ order: 1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-    
-    const total = await Post.countDocuments(query);
-    
-    res.json({ success: true, posts, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    res.json({
+      success: true,
+      posts,
+      total: posts.length
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -87,25 +24,14 @@ router.get('/', async (req, res) => {
 router.get('/slug/:slug', async (req, res) => {
   try {
     const post = await Post.findOne({ slug: req.params.slug, isPublished: true });
+    
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
-    
-    post.views += 1;
+
+    post.views = (post.views || 0) + 1;
     await post.save();
     
-    res.json({ success: true, post });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-router.get('/:id', async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) {
-      return res.status(404).json({ success: false, error: 'Post not found' });
-    }
     res.json({ success: true, post });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -120,22 +46,20 @@ router.post('/:id/like', async (req, res) => {
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
+
+    if (!post.likes) post.likes = [];
     
-    if (!post.likes) {
-      post.likes = [];
-    }
-    
-    const likeIndex = post.likes.indexOf(uid);
-    if (likeIndex > -1) {
-      post.likes.splice(likeIndex, 1);
+    const idx = post.likes.indexOf(uid);
+    if (idx > -1) {
+      post.likes.splice(idx, 1);
     } else {
       post.likes.push(uid);
     }
     
     await post.save();
-    res.json({ success: true, likes: post.likes.length, liked: likeIndex === -1, likesArray: post.likes });
+    
+    res.json({ success: true, likesArray: post.likes, liked: idx === -1 });
   } catch (error) {
-    console.error('Like error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -148,15 +72,13 @@ router.post('/:id/comment', async (req, res) => {
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
-    
-    if (!post.comments) {
-      post.comments = [];
-    }
+
+    if (!post.comments) post.comments = [];
     
     const comment = {
       userId: uid,
       userName: userName || 'Anonymous',
-      userPhoto: userPhoto || null,
+      userPhoto: userPhoto || '',
       text,
       createdAt: new Date()
     };
@@ -164,9 +86,8 @@ router.post('/:id/comment', async (req, res) => {
     post.comments.push(comment);
     await post.save();
     
-    res.json({ success: true, comments: post.comments });
+    res.json({ success: true, comment });
   } catch (error) {
-    console.error('Comment error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -174,15 +95,11 @@ router.post('/:id/comment', async (req, res) => {
 router.post('/:id/download', async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-    
-    if (!post) {
-      return res.status(404).json({ success: false, error: 'Post not found' });
+    if (post) {
+      post.downloads = (post.downloads || 0) + 1;
+      await post.save();
     }
-    
-    post.downloads += 1;
-    await post.save();
-    
-    res.json({ success: true, downloads: post.downloads });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

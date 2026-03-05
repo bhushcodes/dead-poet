@@ -6,94 +6,23 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-const avatarUploadDir = process.env.VERCEL
-  ? path.join('/tmp', 'avatars')
+const avatarDir = process.env.VERCEL 
+  ? path.join('/tmp', 'avatars') 
   : path.join(__dirname, '../uploads/avatars');
 
+try {
+  fs.mkdirSync(avatarDir, { recursive: true });
+} catch (e) {}
+
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    try {
-      fs.mkdirSync(avatarUploadDir, { recursive: true });
-      cb(null, avatarUploadDir);
-    } catch (error) {
-      cb(error);
-    }
-  },
+  destination: (req, file, cb) => cb(null, avatarDir),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || '.png').toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.png';
-    cb(null, `${req.params.uid}-${Date.now()}${safeExt}`);
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `${req.params.uid}-${Date.now()}${ext}`);
   }
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: 3 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if ((file.mimetype || '').startsWith('image/')) {
-      cb(null, true);
-      return;
-    }
-    cb(new Error('Only image files are allowed'));
-  }
-});
-
-function ensureSameUser(req, res, next) {
-  const authUid = req.headers.authorization;
-  if (!authUid || authUid !== req.params.uid) {
-    return res.status(403).json({ success: false, error: 'Unauthorized user action' });
-  }
-  next();
-}
-
-router.post('/save', async (req, res) => {
-  try {
-    const { uid, postId } = req.body;
-    const user = await User.findOne({ uid });
-    
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-    
-    if (!user.savedPosts) {
-      user.savedPosts = [];
-    }
-    
-    const saveIndex = user.savedPosts.indexOf(postId);
-    if (saveIndex > -1) {
-      user.savedPosts.splice(saveIndex, 1);
-    } else {
-      user.savedPosts.push(postId);
-    }
-    
-    await user.save();
-    res.json({ success: true, savedPosts: user.savedPosts, saved: saveIndex === -1 });
-  } catch (error) {
-    console.error('Save error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-router.get('/saved/:uid', async (req, res) => {
-  try {
-    const user = await User.findOne({ uid: req.params.uid });
-    
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-    
-    const savedPosts = user.savedPosts || [];
-    const posts = await require('../models/Post').find({ 
-      _id: { $in: savedPosts },
-      isPublished: true 
-    });
-    
-    res.json({ success: true, posts });
-  } catch (error) {
-    console.error('Saved posts error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 } });
 
 router.get('/:uid', async (req, res) => {
   try {
@@ -101,8 +30,8 @@ router.get('/:uid', async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       user: {
         uid: user.uid,
         email: user.email,
@@ -118,19 +47,21 @@ router.get('/:uid', async (req, res) => {
   }
 });
 
-router.put('/:uid', ensureSameUser, async (req, res) => {
+router.put('/:uid', async (req, res) => {
   try {
-    const { displayName, photoURL } = req.body;
+    const authUid = req.headers.authorization;
+    if (authUid !== req.params.uid) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
     const user = await User.findOne({ uid: req.params.uid });
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    if (typeof displayName === 'string') {
-      const trimmedName = displayName.trim();
-      if (trimmedName) {
-        user.displayName = trimmedName;
-      }
+    const { displayName, photoURL } = req.body;
+    if (typeof displayName === 'string' && displayName.trim()) {
+      user.displayName = displayName.trim();
     }
     if (photoURL === null) {
       user.photoURL = '';
@@ -156,22 +87,67 @@ router.put('/:uid', ensureSameUser, async (req, res) => {
   }
 });
 
-router.post('/:uid/avatar', ensureSameUser, upload.single('avatar'), async (req, res) => {
+router.post('/:uid/avatar', upload.single('avatar'), async (req, res) => {
   try {
+    const authUid = req.headers.authorization;
+    if (authUid !== req.params.uid) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
     const user = await User.findOne({ uid: req.params.uid });
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No image uploaded' });
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
 
-    const photoURL = `/uploads/avatars/${req.file.filename}`;
-    user.photoURL = photoURL;
+    user.photoURL = `/uploads/avatars/${req.file.filename}`;
     await user.save();
 
-    res.json({ success: true, photoURL });
+    res.json({ success: true, photoURL: user.photoURL });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/save', async (req, res) => {
+  try {
+    const { uid, postId } = req.body;
+    const user = await User.findOne({ uid });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    if (!user.savedPosts) user.savedPosts = [];
+    
+    const idx = user.savedPosts.indexOf(postId);
+    if (idx > -1) {
+      user.savedPosts.splice(idx, 1);
+    } else {
+      user.savedPosts.push(postId);
+    }
+    
+    await user.save();
+    res.json({ success: true, savedPosts: user.savedPosts, saved: idx === -1 });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/saved/:uid', async (req, res) => {
+  try {
+    const user = await User.findOne({ uid: req.params.uid });
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    const savedPosts = user.savedPosts || [];
+    const posts = await Post.find({ _id: { $in: savedPosts }, isPublished: true });
+    
+    res.json({ success: true, posts });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -181,17 +157,17 @@ router.get('/:uid/activity', async (req, res) => {
   try {
     const uid = req.params.uid;
     const likedPosts = await Post.find({ likes: uid, isPublished: true }).sort({ updatedAt: -1 });
-
-    const commentedPosts = await Post.find({ 'comments.userId': uid, isPublished: true }).sort({ updatedAt: -1 });
+    
+    const commentedPosts = await Post.find({ 'comments.userId': uid, isPublished: true });
     const comments = [];
-    commentedPosts.forEach((post) => {
-      (post.comments || []).forEach((comment) => {
-        if (comment.userId === uid) {
+    commentedPosts.forEach(post => {
+      post.comments.forEach(c => {
+        if (c.userId === uid) {
           comments.push({
             postTitle: post.title,
             postSlug: post.slug,
-            text: comment.text,
-            createdAt: comment.createdAt
+            text: c.text,
+            createdAt: c.createdAt
           });
         }
       });
