@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARATHI STORIES MENU</title>
+    <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico">
+    <link rel="stylesheet" href="marathi-poem-menu.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap');
+        .user-section { position: fixed; top: 0.8rem; right: 0.8rem; display: flex; align-items: center; gap: 0.4rem; z-index: 100; }
+        .user-btn { height: 2rem; padding: 0 1rem; background: #ffffff; border: 0.08rem solid rgba(34, 38, 55, 0.16); border-radius: 999px; cursor: pointer; font-family: 'Lexend Mega', serif; font-size: 0.6rem; text-decoration: none; color: #222637; transition: all 0.2s; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+        .user-btn:hover { background: rgba(233, 95, 74, 0.1); border-color: rgba(233, 95, 74, 0.3); }
+        .user-btn.primary { background: #e95f4a; color: white; border-color: #e95f4a; }
+        .user-btn.primary:hover { background: #d84f3a; }
+        .user-avatar { width: 1.5rem; height: 1.5rem; border-radius: 50%; object-fit: cover; margin-right: 0.3rem; }
+    </style>
+</head>
+<body>
+    <div class="user-section" id="userSection"><a href="login.html" class="user-btn primary">LOGIN</a></div>
+    <div class="poem-div" id="poemList">
+        <h1>लघुकथांची सूची</h1>
+        <a href="stories-menu.html"><p>Main Menu</p></a>
+    </div>
+    <script src="script.js" defer></script>
+    <script src="api.js" defer></script>
+    <script>
+        function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile">' + (user.displayName || 'Profile') + '</a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
+        function logout() { localStorage.removeItem('user'); updateUserSection(); window.location.href = 'menu.html'; }
+        updateUserSection();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('poemList');
+            const response = await api.getPosts('story', 'marathi');
+            if (response.success && response.posts.length > 0) {
+                let html = '<h1>लघुकथांची सूची</h1><a href="stories-menu.html"><p>Main Menu</p></a>';
+                response.posts.forEach(post => { html += '<a href="post.html?slug=' + post.slug + '"><p>' + post.title + '</p></a>'; });
+                container.innerHTML = html;
+            }
+        });
+    </script>
+</body>
+</html>

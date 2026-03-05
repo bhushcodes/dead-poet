@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALL POEM MENU</title>
+    <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Bubbler+One&family=Caveat:wght@400..700&family=Comforter+Brush&family=Crafty+Girls&family=Gloria+Hallelujah&family=Leckerli+One&family=Playwrite+HU:wght@100..400&family=Princess+Sofia&family=WindSong:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="menu.css">
+    <style>
+        .user-section { position: fixed; top: 0.8rem; right: 0.8rem; display: flex; align-items: center; gap: 0.4rem; z-index: 100; }
+        .user-btn { height: 2rem; padding: 0 1rem; background: #ffffff; border: 0.08rem solid rgba(34, 38, 55, 0.16); border-radius: 999px; cursor: pointer; font-family: 'Lexend Mega', serif; font-size: 0.6rem; text-decoration: none; color: #222637; transition: all 0.2s; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+        .user-btn:hover { background: rgba(233, 95, 74, 0.1); border-color: rgba(233, 95, 74, 0.3); }
+        .user-btn.primary { background: #e95f4a; color: white; border-color: #e95f4a; }
+        .user-btn.primary:hover { background: #d84f3a; }
+        .user-avatar { width: 1.5rem; height: 1.5rem; border-radius: 50%; object-fit: cover; margin-right: 0.3rem; }
+    </style>
+</head>
+<body>
+    <div class="user-section" id="userSection"><a href="login.html" class="user-btn primary">LOGIN</a></div>
+    <div class="grid-container">
+       <a class="grid-item" href="marathi-poem-menu.html"><h6>MARATHI</h6></a>
+       <a class="grid-item" href="hindi-poem-menu.html"><h6>HINDI</h6></a>
+       <a class="grid-item" href="english-poem-menu.html"><h6>ENGLISH</h6></a>
+    </div>
+    <script src="script.js" defer></script>
+    <script>
+        function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile">' + (user.displayName || 'Profile') + '</a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
+        function logout() { localStorage.removeItem('user'); updateUserSection(); window.location.href = 'menu.html'; }
+        updateUserSection();
+    </script>
+</body>
+</html>

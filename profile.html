@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - DEAD POET</title>
+    <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 1.1rem;
+            font-family: "Lexend Mega", serif;
+        }
+
+        .profile-wrap {
+            width: min(52rem, 100%);
+            margin: 0 auto;
+            display: grid;
+            gap: 1rem;
+            animation: rise-in 0.55s ease both;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .top-link,
+        .top-btn {
+            border: 0.08rem solid var(--border);
+            border-radius: var(--radius-pill);
+            background: var(--surface-strong);
+            color: var(--text);
+            text-decoration: none;
+            min-height: 2.1rem;
+            padding: 0.45rem 0.8rem;
+            font-size: 0.62rem;
+            font-family: "Lexend Mega", serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .top-btn:hover,
+        .top-link:hover {
+            background: rgba(233, 95, 74, 0.12);
+            border-color: rgba(233, 95, 74, 0.35);
+        }
+
+        .panel {
+            border: 0.08rem solid var(--border);
+            border-radius: var(--radius-card);
+            background: var(--surface);
+            box-shadow: var(--shadow-soft);
+            padding: 1rem;
+        }
+
+        .profile-head {
+            display: grid;
+            justify-items: center;
+            gap: 0.55rem;
+            text-align: center;
+        }
+
+        .avatar {
+            width: 5.1rem;
+            height: 5.1rem;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 0.15rem solid rgba(233, 95, 74, 0.35);
+            background: #fff;
+        }
+
+        .name {
+            font-size: 1rem;
+            line-height: 1.3;
+        }
+
+        .mail,
+        .member {
+            color: var(--text-soft);
+            font-size: 0.62rem;
+            line-height: 1.35;
+        }
+
+        .avatar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.45rem;
+            margin-top: 0.25rem;
+        }
+
+        .tiny-btn {
+            border: 0.08rem solid var(--border);
+            border-radius: var(--radius-pill);
+            background: #fff;
+            color: var(--text);
+            min-height: 1.9rem;
+            padding: 0.38rem 0.72rem;
+            font-size: 0.58rem;
+            font-family: "Lexend Mega", serif;
+            cursor: pointer;
+        }
+
+        .tiny-btn:hover {
+            background: rgba(65, 106, 217, 0.1);
+            border-color: rgba(65, 106, 217, 0.34);
+        }
+
+        .grid-two {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .section-title {
+            font-size: 0.66rem;
+            letter-spacing: 0.06em;
+            color: var(--text-soft);
+            margin-bottom: 0.7rem;
+        }
+
+        .field {
+            display: grid;
+            gap: 0.32rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .field label {
+            font-size: 0.56rem;
+            color: var(--text-soft);
+            letter-spacing: 0.04em;
+        }
+
+        .field input {
+            width: 100%;
+            min-height: 2rem;
+            border-radius: 0.62rem;
+            border: 0.08rem solid var(--border);
+            background: #fff;
+            color: var(--text);
+            font-family: "Lexend Mega", serif;
+            font-size: 0.64rem;
+            padding: 0.45rem 0.65rem;
+        }
+
+        .field input:focus {
+            outline: 0.1rem solid rgba(65, 106, 217, 0.4);
+            outline-offset: 0.05rem;
+        }
+
+        .action-btn {
+            border: 0.08rem solid rgba(233, 95, 74, 0.44);
+            border-radius: var(--radius-pill);
+            background: linear-gradient(130deg, #fff7ed 0%, #ffd8c2 100%);
+            color: var(--text);
+            min-height: 2rem;
+            padding: 0.42rem 0.86rem;
+            font-size: 0.58rem;
+            font-family: "Lexend Mega", serif;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            border-color: rgba(233, 95, 74, 0.65);
+        }
+
+        .status {
+            min-height: 1rem;
+            margin-top: 0.4rem;
+            font-size: 0.57rem;
+            color: var(--text-soft);
+        }
+
+        .status.is-error {
+            color: #bf3d2b;
+        }
+
+        .status.is-success {
+            color: #2f7a4f;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .tab {
+            border: 0.08rem solid var(--border);
+            border-radius: var(--radius-pill);
+            background: #fff;
+            color: var(--text-soft);
+            min-height: 2rem;
+            padding: 0.38rem 0.78rem;
+            font-size: 0.58rem;
+            font-family: "Lexend Mega", serif;
+            cursor: pointer;
+        }
+
+        .tab.is-active {
+            background: linear-gradient(130deg, #fff7ed 0%, #ffd8c2 100%);
+            border-color: rgba(233, 95, 74, 0.44);
+            color: var(--text);
+        }
+
+        .activity-list {
+            display: grid;
+            gap: 0.55rem;
+            max-height: 20rem;
+            overflow: auto;
+            padding-right: 0.2rem;
+        }
+
+        .item {
+            border: 0.08rem solid rgba(34, 38, 55, 0.1);
+            border-radius: 0.72rem;
+            background: #fff;
+            padding: 0.62rem 0.72rem;
+        }
+
+        .item a {
+            text-decoration: none;
+            color: var(--text);
+            font-size: 0.66rem;
+            line-height: 1.35;
+        }
+
+        .item a:hover {
+            color: var(--accent);
+        }
+
+        .meta {
+            margin-top: 0.25rem;
+            color: var(--text-soft);
+            font-size: 0.52rem;
+            line-height: 1.4;
+        }
+
+        .empty {
+            border: 0.08rem dashed rgba(34, 38, 55, 0.2);
+            border-radius: 0.72rem;
+            padding: 1rem;
+            text-align: center;
+            color: var(--text-soft);
+            font-size: 0.6rem;
+        }
+
+        @media (max-width: 780px) {
+            .grid-two {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="profile-wrap">
+        <div class="top-bar">
+            <a class="top-link" href="menu.html">Back To Menu</a>
+            <button class="top-btn" id="logoutBtn" type="button">Logout</button>
+        </div>
+
+        <section class="panel profile-head">
+            <img class="avatar" id="avatar" src="/Favicon/android-chrome-192x192.png" alt="Profile picture">
+            <div class="name" id="name">Loading...</div>
+            <div class="mail" id="email"></div>
+            <div class="member" id="memberSince"></div>
+
+            <div class="avatar-actions">
+                <input id="avatarInput" type="file" accept="image/*" style="display:none">
+                <button class="tiny-btn" id="uploadBtn" type="button">Upload Profile Picture</button>
+                <button class="tiny-btn" id="removeAvatarBtn" type="button">Remove Picture</button>
+            </div>
+        </section>
+
+        <section class="grid-two">
+            <div class="panel">
+                <div class="section-title">PROFILE SETTINGS</div>
+                <form id="profileForm">
+                    <div class="field">
+                        <label for="displayName">Username</label>
+                        <input id="displayName" type="text" maxlength="60" placeholder="Enter username">
+                    </div>
+                    <button class="action-btn" type="submit">Save Profile</button>
+                </form>
+                <div class="status" id="profileStatus"></div>
+            </div>
+
+            <div class="panel">
+                <div class="section-title">SECURITY</div>
+                <form id="passwordForm">
+                    <div class="field">
+                        <label for="currentPassword">Current Password (for email login)</label>
+                        <input id="currentPassword" type="password" autocomplete="current-password">
+                    </div>
+                    <div class="field">
+                        <label for="newPassword">New Password</label>
+                        <input id="newPassword" type="password" autocomplete="new-password">
+                    </div>
+                    <div class="field">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input id="confirmPassword" type="password" autocomplete="new-password">
+                    </div>
+                    <button class="action-btn" type="submit">Change Password</button>
+                </form>
+                <div class="status" id="passwordStatus"></div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="section-title">MY ACTIVITY</div>
+            <div class="tabs">
+                <button class="tab is-active" data-tab="saved" type="button">Saved</button>
+                <button class="tab" data-tab="liked" type="button">Liked</button>
+                <button class="tab" data-tab="comments" type="button">Comments</button>
+            </div>
+            <div class="activity-list" id="activityList">
+                <div class="empty">Loading...</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js" defer></script>
+    <script src="api.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUmWxwIu5FeHMXsldEPWE_nmIr_6ZRn2c",
+            authDomain: "poem-20cce.firebaseapp.com",
+            projectId: "poem-20cce",
+            storageBucket: "poem-20cce.firebasestorage.app",
+            messagingSenderId: "558629882644",
+            appId: "1:558629882644:web:88e2c5e3781bdaa4511001"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const FALLBACK_AVATAR = '/Favicon/android-chrome-192x192.png';
+
+        let currentUser = null;
+        let activityCache = null;
+
+        function formatMemberDate(value) {
+            const date = value ? new Date(value) : null;
+            if (!date || Number.isNaN(date.getTime())) {
+                return 'Member since: Not available';
+            }
+            return `Member since: ${date.toLocaleDateString()}`;
+        }
+
+        function setStatus(id, message, kind) {
+            const el = document.getElementById(id);
+            el.textContent = message || '';
+            el.classList.remove('is-error', 'is-success');
+            if (kind) {
+                el.classList.add(kind);
+            }
+        }
+
+        function setAvatar(url) {
+            const avatar = document.getElementById('avatar');
+            avatar.src = url && url.trim() ? url : FALLBACK_AVATAR;
+            avatar.onerror = () => {
+                avatar.onerror = null;
+                avatar.src = FALLBACK_AVATAR;
+            };
+        }
+
+        function setLocalUser(user) {
+            currentUser = user;
+            localStorage.setItem('user', JSON.stringify(user));
+            api.setUser(user);
+        }
+
+        async function syncUserFromToken(authUser) {
+            const idToken = await authUser.getIdToken();
+            const response = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Auth sync failed');
+            }
+            setLocalUser(data.user);
+        }
+
+        async function loadProfileDetails() {
+            const response = await fetch(`/api/users/${currentUser.uid}`);
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load profile');
+            }
+
+            const merged = { ...currentUser, ...data.user };
+            setLocalUser(merged);
+
+            setAvatar(merged.photoURL);
+            document.getElementById('name').textContent = merged.displayName || 'User';
+            document.getElementById('email').textContent = merged.email || '';
+            document.getElementById('memberSince').textContent = formatMemberDate(merged.createdAt);
+            document.getElementById('displayName').value = merged.displayName || '';
+        }
+
+        function renderSaved(posts) {
+            const list = document.getElementById('activityList');
+            if (!posts || !posts.length) {
+                list.innerHTML = '<div class="empty">No saved posts yet.</div>';
+                return;
+            }
+
+            list.innerHTML = posts.map((post) => `
+                <div class="item">
+                    <a href="post.html?slug=${post.slug}">${post.title}</a>
+                    <div class="meta">${post.category} • ${post.language} • ${post.views} views</div>
+                </div>
+            `).join('');
+        }
+
+        function renderLiked(posts) {
+            const list = document.getElementById('activityList');
+            if (!posts || !posts.length) {
+                list.innerHTML = '<div class="empty">No liked posts yet.</div>';
+                return;
+            }
+
+            list.innerHTML = posts.map((post) => `
+                <div class="item">
+                    <a href="post.html?slug=${post.slug}">${post.title}</a>
+                    <div class="meta">${post.category} • ${post.language} • ${post.views} views</div>
+                </div>
+            `).join('');
+        }
+
+        function renderComments(comments) {
+            const list = document.getElementById('activityList');
+            if (!comments || !comments.length) {
+                list.innerHTML = '<div class="empty">No comments yet.</div>';
+                return;
+            }
+
+            list.innerHTML = comments.map((comment) => {
+                const date = comment.createdAt ? new Date(comment.createdAt) : null;
+                const dateText = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : 'Unknown date';
+                return `
+                    <div class="item">
+                        <a href="post.html?slug=${comment.postSlug}">${comment.postTitle}</a>
+                        <div class="meta">${comment.text}</div>
+                        <div class="meta">${dateText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setActiveTab(tab) {
+            document.querySelectorAll('.tab').forEach((btn) => {
+                btn.classList.toggle('is-active', btn.dataset.tab === tab);
+            });
+        }
+
+        async function loadActivity(tab) {
+            setActiveTab(tab);
+            const list = document.getElementById('activityList');
+            list.innerHTML = '<div class="empty">Loading...</div>';
+
+            try {
+                if (tab === 'saved') {
+                    const savedRes = await fetch(`/api/users/saved/${currentUser.uid}`);
+                    const savedData = await savedRes.json();
+                    if (!savedData.success) {
+                        throw new Error(savedData.error || 'Failed to load saved posts');
+                    }
+                    renderSaved(savedData.posts || []);
+                    return;
+                }
+
+                if (!activityCache) {
+                    const activityRes = await fetch(`/api/users/${currentUser.uid}/activity`);
+                    const activityData = await activityRes.json();
+                    if (!activityData.success) {
+                        throw new Error(activityData.error || 'Failed to load activity');
+                    }
+                    activityCache = activityData;
+                }
+
+                if (tab === 'liked') {
+                    renderLiked(activityCache.likedPosts || []);
+                } else {
+                    renderComments(activityCache.comments || []);
+                }
+            } catch (error) {
+                console.error(error);
+                list.innerHTML = `<div class="empty">${error.message || 'Error loading activity.'}</div>`;
+            }
+        }
+
+        async function updateDisplayName(event) {
+            event.preventDefault();
+            setStatus('profileStatus', '', null);
+
+            const displayName = document.getElementById('displayName').value.trim();
+            if (!displayName) {
+                setStatus('profileStatus', 'Please enter a valid username.', 'is-error');
+                return;
+            }
+
+            try {
+                const authUser = firebase.auth().currentUser;
+                if (authUser) {
+                    await authUser.updateProfile({ displayName });
+                }
+
+                const response = await fetch(`/api/users/${currentUser.uid}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': currentUser.uid
+                    },
+                    body: JSON.stringify({ displayName })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Could not update profile');
+                }
+
+                setLocalUser(data.user);
+                document.getElementById('name').textContent = data.user.displayName || 'User';
+                setStatus('profileStatus', 'Profile updated successfully.', 'is-success');
+            } catch (error) {
+                console.error(error);
+                setStatus('profileStatus', error.message || 'Failed to update profile.', 'is-error');
+            }
+        }
+
+        async function uploadAvatar(file) {
+            if (!file) {
+                return;
+            }
+            if (file.size > 3 * 1024 * 1024) {
+                setStatus('profileStatus', 'Image must be under 3MB.', 'is-error');
+                return;
+            }
+
+            setStatus('profileStatus', 'Uploading profile picture...', null);
+
+            try {
+                const formData = new FormData();
+                formData.append('avatar', file);
+
+                const uploadRes = await fetch(`/api/users/${currentUser.uid}/avatar`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': currentUser.uid
+                    },
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadData.success) {
+                    throw new Error(uploadData.error || 'Upload failed');
+                }
+
+                const photoURL = uploadData.photoURL.startsWith('http')
+                    ? uploadData.photoURL
+                    : `${window.location.origin}${uploadData.photoURL}`;
+
+                const authUser = firebase.auth().currentUser;
+                if (authUser) {
+                    await authUser.updateProfile({ photoURL });
+                }
+
+                const saveRes = await fetch(`/api/users/${currentUser.uid}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': currentUser.uid
+                    },
+                    body: JSON.stringify({ photoURL })
+                });
+                const saveData = await saveRes.json();
+                if (!saveData.success) {
+                    throw new Error(saveData.error || 'Failed to save profile photo');
+                }
+
+                setLocalUser(saveData.user);
+                setAvatar(saveData.user.photoURL);
+                setStatus('profileStatus', 'Profile picture updated.', 'is-success');
+            } catch (error) {
+                console.error(error);
+                setStatus('profileStatus', error.message || 'Failed to update picture.', 'is-error');
+            }
+        }
+
+        async function removeAvatar() {
+            setStatus('profileStatus', 'Removing profile picture...', null);
+            try {
+                const authUser = firebase.auth().currentUser;
+                if (authUser) {
+                    await authUser.updateProfile({ photoURL: null });
+                }
+
+                const response = await fetch(`/api/users/${currentUser.uid}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': currentUser.uid
+                    },
+                    body: JSON.stringify({ photoURL: null })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to remove profile picture');
+                }
+
+                setLocalUser(data.user);
+                setAvatar('');
+                setStatus('profileStatus', 'Profile picture removed.', 'is-success');
+            } catch (error) {
+                console.error(error);
+                setStatus('profileStatus', error.message || 'Could not remove profile picture.', 'is-error');
+            }
+        }
+
+        async function changePassword(event) {
+            event.preventDefault();
+            setStatus('passwordStatus', '', null);
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!newPassword || newPassword.length < 6) {
+                setStatus('passwordStatus', 'New password must be at least 6 characters.', 'is-error');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setStatus('passwordStatus', 'Password confirmation does not match.', 'is-error');
+                return;
+            }
+
+            try {
+                const authUser = firebase.auth().currentUser;
+                if (!authUser) {
+                    throw new Error('No logged-in user');
+                }
+
+                const hasPasswordProvider = (authUser.providerData || []).some((p) => p.providerId === 'password');
+
+                if (hasPasswordProvider) {
+                    if (!currentPassword) {
+                        throw new Error('Current password is required for email login.');
+                    }
+                    const credential = firebase.auth.EmailAuthProvider.credential(authUser.email, currentPassword);
+                    await authUser.reauthenticateWithCredential(credential);
+                } else {
+                    const googleProvider = new firebase.auth.GoogleAuthProvider();
+                    await authUser.reauthenticateWithPopup(googleProvider);
+                }
+
+                await authUser.updatePassword(newPassword);
+
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                setStatus('passwordStatus', 'Password updated successfully.', 'is-success');
+            } catch (error) {
+                console.error(error);
+                setStatus('passwordStatus', error.message || 'Could not update password.', 'is-error');
+            }
+        }
+
+        function attachListeners() {
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                await firebase.auth().signOut();
+                localStorage.removeItem('user');
+                api.logout();
+                window.location.href = 'login.html';
+            });
+
+            document.getElementById('profileForm').addEventListener('submit', updateDisplayName);
+            document.getElementById('passwordForm').addEventListener('submit', changePassword);
+
+            document.getElementById('uploadBtn').addEventListener('click', () => {
+                document.getElementById('avatarInput').click();
+            });
+
+            document.getElementById('avatarInput').addEventListener('change', async (event) => {
+                const file = event.target.files && event.target.files[0];
+                await uploadAvatar(file);
+                event.target.value = '';
+            });
+
+            document.getElementById('removeAvatarBtn').addEventListener('click', removeAvatar);
+
+            document.querySelectorAll('.tab').forEach((tabBtn) => {
+                tabBtn.addEventListener('click', () => {
+                    loadActivity(tabBtn.dataset.tab);
+                });
+            });
+        }
+
+        async function bootstrap() {
+            const authUser = firebase.auth().currentUser;
+            if (!authUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            await syncUserFromToken(authUser);
+            await loadProfileDetails();
+            await loadActivity('saved');
+        }
+
+        attachListeners();
+
+        firebase.auth().onAuthStateChanged(async (authUser) => {
+            if (!authUser) {
+                localStorage.removeItem('user');
+                api.logout();
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                await bootstrap();
+            } catch (error) {
+                console.error(error);
+                setStatus('profileStatus', error.message || 'Could not load profile.', 'is-error');
+            }
+        });
+    </script>
+</body>
+</html>

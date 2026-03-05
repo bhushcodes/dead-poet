@@ -1,0 +1,91 @@
+@import "styles.css";
+
+body {
+    font-family: "Lexend Mega", serif;
+    min-height: 100svh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: clamp(1rem, 3.5vw, 2.5rem);
+}
+
+.grid-container {
+    width: min(72rem, 100%);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: clamp(0.95rem, 2.2vw, 1.5rem);
+    animation: rise-in 0.7s ease both;
+}
+
+a {
+    text-decoration: none;
+    display: block;
+}
+
+.grid-item {
+    width: 100%;
+    min-height: clamp(5rem, 12vw, 7.2rem);
+    border: 0.1rem solid var(--border);
+    border-radius: var(--radius-card);
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 244, 235, 0.95));
+    color: var(--text);
+    font-family: "Lexend Mega", serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.grid-item h6 {
+    font-size: clamp(0.8rem, 1.4vw, 1rem);
+    letter-spacing: 0.08em;
+    line-height: 1.35;
+    max-width: 18ch;
+    text-align: center;
+}
+
+.grid-item:hover {
+    transform: translateY(-0.22rem);
+    box-shadow: var(--shadow-float);
+    border-color: rgba(233, 95, 74, 0.55);
+}
+
+.grid-item:focus-visible,
+a:focus-visible .grid-item {
+    outline: 0.13rem solid var(--accent-cool);
+    outline-offset: 0.15rem;
+}
+
+@media (max-width: 768px) {
+    body {
+        justify-content: flex-start;
+    }
+
+    .grid-container {
+        grid-template-columns: 1fr;
+        width: min(28rem, 100%);
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.9rem;
+    }
+
+    .grid-item {
+        min-height: 5.2rem;
+    }
+
+    .grid-item h6 {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-height: 760px) {
+    body {
+        justify-content: flex-start;
+    }
+}

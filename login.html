@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Dead Poet</title>
+    <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="menu.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .login-box {
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: 1.15rem;
+            box-shadow: var(--shadow-soft);
+            width: 100%;
+            max-width: 380px;
+        }
+        h1 {
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-soft);
+            margin-bottom: 0.4rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .btn {
+            width: 100%;
+            padding: 0.7rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            margin-bottom: 0.8rem;
+        }
+        .btn:hover {
+            background: var(--accent-strong);
+        }
+        .btn-secondary {
+            background: var(--accent-cool);
+        }
+        .divider {
+            text-align: center;
+            margin: 1.2rem 0;
+            color: var(--text-soft);
+            font-size: 0.6rem;
+            position: relative;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .google-btn {
+            width: 100%;
+            padding: 0.7rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .google-btn:hover {
+            background: #f5f5f5;
+        }
+        .switch {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.7rem;
+            color: var(--text-soft);
+        }
+        .switch a {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .error {
+            color: var(--accent);
+            font-size: 0.65rem;
+            margin-bottom: 0.8rem;
+            text-align: center;
+        }
+        .success {
+            color: #2f7a4f;
+            font-size: 0.65rem;
+            margin-bottom: 0.8rem;
+            text-align: center;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .back-link a {
+            color: var(--text-soft);
+            text-decoration: none;
+            font-size: 0.7rem;
+        }
+        .back-link a:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>Welcome</h1>
+        <div id="errorMsg" class="error"></div>
+        <div id="successMsg" class="success"></div>
+        <div id="loginForm">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+            <button class="btn" onclick="login()">LOGIN</button>
+            <button class="btn btn-secondary" onclick="signup()">SIGN UP</button>
+            <div class="divider">OR</div>
+            <button class="google-btn" onclick="googleLogin()">
+                <img src="https://www.google.com/favicon.ico" width="18">
+                Continue with Google
+            </button>
+            <div class="back-link">
+                <a href="menu.html">← Back to Menu</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUmWxwIu5FeHMXsldEPWE_nmIr_6ZRn2c",
+            authDomain: "poem-20cce.firebaseapp.com",
+            projectId: "poem-20cce",
+            storageBucket: "poem-20cce.firebasestorage.app",
+            messagingSenderId: "558629882644",
+            appId: "1:558629882644:web:88e2c5e3781bdaa4511001"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+        function setButtonsDisabled(disabled) {
+            document.querySelectorAll('button').forEach((btn) => {
+                btn.disabled = disabled;
+                btn.style.opacity = disabled ? '0.7' : '1';
+                btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+            });
+        }
+
+        function showError(msg) {
+            const errorEl = document.getElementById('errorMsg');
+            const successEl = document.getElementById('successMsg');
+            if (errorEl) errorEl.textContent = msg || '';
+            if (successEl) successEl.textContent = '';
+        }
+
+        function showSuccess(msg) {
+            const errorEl = document.getElementById('errorMsg');
+            const successEl = document.getElementById('successMsg');
+            if (successEl) successEl.textContent = msg || '';
+            if (errorEl) errorEl.textContent = '';
+        }
+
+        function humanizeAuthError(error) {
+            if (!error || !error.code) {
+                return 'Login failed. Please try again.';
+            }
+
+            const map = {
+                'auth/popup-blocked': 'Popup blocked by browser. Redirecting to Google sign in...',
+                'auth/popup-closed-by-user': 'Popup was closed before login completed.',
+                'auth/unauthorized-domain': 'This domain is not authorized in Firebase Auth settings.',
+                'auth/operation-not-supported-in-this-environment': 'Google popup is not supported here. Redirecting...',
+                'auth/network-request-failed': 'Network issue. Check internet and try again.',
+                'auth/invalid-login-credentials': 'Invalid email or password.',
+                'auth/user-not-found': 'No account found for this email.',
+                'auth/wrong-password': 'Incorrect password.',
+                'auth/email-already-in-use': 'This email is already registered.'
+            };
+
+            return map[error.code] || error.message || 'Login failed. Please try again.';
+        }
+
+        async function saveBackendSession(user) {
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Could not sync login with backend');
+            }
+
+            localStorage.setItem('user', JSON.stringify(data.user));
+            return data.user;
+        }
+
+        async function completeLogin(user, successText) {
+            setButtonsDisabled(true);
+            showError('');
+            try {
+                await saveBackendSession(user);
+                showSuccess(successText || 'Login successful. Redirecting...');
+                setTimeout(() => {
+                    window.location.href = 'menu.html';
+                }, 450);
+            } catch (error) {
+                showError(error.message || 'Could not finish login.');
+                setButtonsDisabled(false);
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('Please enter email and password');
+                return;
+            }
+            
+            setButtonsDisabled(true);
+            showError('');
+            try {
+                const result = await firebase.auth().signInWithEmailAndPassword(email, password);
+                await completeLogin(result.user, 'Logged in successfully. Redirecting...');
+            } catch (error) {
+                showError(humanizeAuthError(error));
+                setButtonsDisabled(false);
+            }
+        }
+
+        async function signup() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('Please enter email and password');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters');
+                return;
+            }
+            
+            setButtonsDisabled(true);
+            showError('');
+            try {
+                const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                await completeLogin(result.user, 'Account created! Redirecting...');
+            } catch (error) {
+                showError(humanizeAuthError(error));
+                setButtonsDisabled(false);
+            }
+        }
+
+        async function googleLogin() {
+            setButtonsDisabled(true);
+            showError('');
+            try {
+                const result = await firebase.auth().signInWithPopup(googleProvider);
+                await completeLogin(result.user, 'Google login successful. Redirecting...');
+            } catch (error) {
+                const fallbackCodes = ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'];
+                if (fallbackCodes.includes(error.code)) {
+                    showSuccess('Popup not available. Redirecting to Google sign in...');
+                    try {
+                        await firebase.auth().signInWithRedirect(googleProvider);
+                        return;
+                    } catch (redirectError) {
+                        showError(humanizeAuthError(redirectError));
+                        setButtonsDisabled(false);
+                        return;
+                    }
+                }
+
+                showError(humanizeAuthError(error));
+                setButtonsDisabled(false);
+            }
+        }
+
+        firebase.auth().getRedirectResult()
+            .then(async (result) => {
+                if (result && result.user) {
+                    await completeLogin(result.user, 'Google login successful. Redirecting...');
+                    return;
+                }
+                setButtonsDisabled(false);
+            })
+            .catch((error) => {
+                showError(humanizeAuthError(error));
+                setButtonsDisabled(false);
+            });
+
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (!user) {
+                return;
+            }
+
+            const existing = localStorage.getItem('user');
+            if (existing) {
+                return;
+            }
+
+            try {
+                await saveBackendSession(user);
+            } catch (error) {
+                showError(error.message || 'Could not restore session');
+            }
+        });
+    </script>
+</body>
+</html>

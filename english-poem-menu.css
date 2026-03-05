@@ -1,0 +1,75 @@
+@import "styles.css";
+
+body {
+    font-family: "Special Elite", serif;
+    min-height: 100svh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: clamp(1rem, 3vw, 2.3rem);
+}
+
+.poem-div {
+    width: min(44rem, 100%);
+    margin-inline: auto;
+    border: 0.1rem solid var(--border);
+    border-radius: var(--radius-card);
+    background:
+        linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(240, 247, 255, 0.9));
+    box-shadow: var(--shadow-soft);
+    padding: clamp(1rem, 3vw, 2rem);
+    display: grid;
+    gap: 0.7rem;
+    animation: rise-in 0.68s ease both;
+}
+
+h1 {
+    text-align: center;
+    font-size: clamp(1.35rem, 3vw, 2rem);
+    line-height: 1.35;
+    margin-bottom: 0.25rem;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+p {
+    border: 0.08rem solid rgba(34, 38, 55, 0.08);
+    border-radius: 0.85rem;
+    background: rgba(255, 246, 238, 0.86);
+    padding: 0.78rem 1rem;
+    font-size: clamp(1rem, 2vw, 1.24rem);
+    line-height: 1.45;
+    text-align: center;
+    overflow-wrap: anywhere;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+a:hover p {
+    transform: translateY(-0.08rem);
+    border-color: rgba(233, 95, 74, 0.45);
+    box-shadow: 0 0.65rem 1.2rem rgba(34, 38, 55, 0.1);
+    font-weight: 700;
+}
+
+a:focus-visible p {
+    outline: 0.13rem solid var(--accent-cool);
+    outline-offset: 0.12rem;
+}
+
+@media (max-width: 480px) {
+    body {
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0.9rem;
+    }
+}
+
+@media (max-height: 760px) {
+    body {
+        justify-content: flex-start;
+        align-items: center;
+    }
+}

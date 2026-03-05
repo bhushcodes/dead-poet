@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post - DEAD POET</title>
+    <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Bubbler+One&family=Caveat:wght@400..700&family=Comforter+Brush&family=Crafty+Girls&family=Gloria+Hallelujah&family=Leckerli+One&family=Playwrite+HU:wght@100..400&family=Princess+Sofia&family=WindSong:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="marathipoem.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap');
+        
+        .user-section { position: fixed; top: 0.8rem; right: 0.8rem; display: flex; align-items: center; gap: 0.4rem; z-index: 100; }
+        .user-btn { height: 2rem; padding: 0 1rem; background: #ffffff; border: 0.08rem solid rgba(34, 38, 55, 0.16); border-radius: 999px; cursor: pointer; font-family: 'Lexend Mega', serif; font-size: 0.6rem; text-decoration: none; color: #222637; transition: all 0.2s; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+        .user-btn:hover { background: rgba(233, 95, 74, 0.1); border-color: rgba(233, 95, 74, 0.3); }
+        .user-btn.primary { background: #e95f4a; color: white; border-color: #e95f4a; }
+        .user-btn.primary:hover { background: #d84f3a; }
+        .user-avatar { width: 1.5rem; height: 1.5rem; border-radius: 50%; object-fit: cover; margin-right: 0.3rem; }
+        
+        .interaction-bar {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .interaction-btn {
+            background: rgba(233, 95, 74, 0.1);
+            border: 1px solid rgba(233, 95, 74, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-family: 'Lexend Mega', serif;
+            font-size: 0.7rem;
+            color: var(--text);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .interaction-btn:hover {
+            background: rgba(233, 95, 74, 0.2);
+        }
+        
+        .interaction-btn.liked {
+            background: rgba(233, 95, 74, 0.3);
+            color: var(--accent-strong);
+        }
+        
+        .interaction-btn.saved {
+            background: rgba(65, 106, 217, 0.2);
+            border-color: rgba(65, 106, 217, 0.4);
+        }
+        
+        .comments-section {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 1rem;
+        }
+        
+        .comments-section h3 {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            color: var(--text-soft);
+        }
+        
+        .comment-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .comment-form input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            font-family: 'Lexend Mega', serif;
+            font-size: 0.75rem;
+        }
+        
+        .comment-form button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-family: 'Lexend Mega', serif;
+            font-size: 0.7rem;
+        }
+        
+        .comment {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+        
+        .comment-author {
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .comment-text {
+            margin-top: 0.3rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .nav-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        
+        .auth-prompt {
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-soft);
+            font-size: 0.8rem;
+        }
+        
+        .auth-prompt a {
+            color: var(--accent);
+            cursor: pointer;
+        }
+        
+        .login-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .login-modal.active {
+            display: flex;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            max-width: 350px;
+        }
+        
+        .login-box h2 {
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        
+        .google-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 0.7rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-section" id="userSection"><a href="login.html" class="user-btn primary">LOGIN</a></div>
+    <main>
+        <div class="poem-div" id="postContainer">
+            <div class="title"><h1 id="postTitle">Loading...</h1></div>
+            <div class="poem" id="postContent">
+                <p>Please wait...</p>
+            </div>
+            <div class="author" id="postAuthor"></div>
+            
+            <div class="interaction-bar" id="interactionBar">
+            </div>
+            
+            <div class="nav-links" id="navLinks">
+            </div>
+        </div>
+        
+        <div class="comments-section" id="commentsSection" style="display: none;">
+            <h3>Comments</h3>
+            <div class="comment-form" id="commentForm">
+                <input type="text" id="commentInput" placeholder="Write a comment...">
+                <button onclick="submitComment()">Post</button>
+            </div>
+            <div id="commentsList"></div>
+        </div>
+    </main>
+    
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <h2>Login Required</h2>
+            <p>Please login to interact with posts</p>
+            <button class="google-btn" onclick="showLoginPrompt()">
+                <img src="https://www.google.com/favicon.ico" width="20" alt="">
+                Sign in with Google
+            </button>
+            <p style="margin-top: 1rem; font-size: 0.8rem; cursor: pointer;" onclick="closeLoginModal()">Cancel</p>
+        </div>
+    </div>
+    
+    <script src="script.js" defer></script>
+    <script src="api.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    <script>
+        function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile">' + (user.displayName || 'Profile') + '</a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
+        function logout() { localStorage.removeItem('user'); updateUserSection(); window.location.href = 'menu.html'; }
+        updateUserSection();
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUmWxwIu5FeHMXsldEPWE_nmIr_6ZRn2c",
+            authDomain: "poem-20cce.firebaseapp.com",
+            projectId: "poem-20cce",
+            storageBucket: "poem-20cce.firebasestorage.app",
+            messagingSenderId: "558629882644",
+            appId: "1:558629882644:web:88e2c5e3781bdaa4511001",
+            measurementId: "G-6WDM1SBXGB"
+        };
+
+        let currentPost = null;
+        let currentPostId = null;
+
+        async function loadPost() {
+            const params = new URLSearchParams(window.location.search);
+            const slug = params.get('slug');
+            
+            if (!slug) {
+                window.location.href = 'menu.html';
+                return;
+            }
+            
+            const data = await api.getPost(slug);
+            
+            if (!data.success) {
+                window.location.href = 'menu.html';
+                return;
+            }
+            
+            currentPost = data.post;
+            currentPostId = data.post._id;
+            
+            document.title = data.post.title + ' - DEAD POET';
+            document.getElementById('postTitle').textContent = data.post.title;
+            document.getElementById('postContent').innerHTML = data.post.content.split('\n').map(line => `<p>${line}</p>`).join('');
+            document.getElementById('postAuthor').innerHTML = `<p>~${data.post.author}</p>`;
+            
+            setupInteractions();
+            loadComments();
+            setupNavigation();
+        }
+
+        function setupInteractions() {
+            const user = api.getUser();
+            const likesArray = currentPost.likes || [];
+            const isLiked = user && likesArray.includes(user.uid);
+            const isSaved = user && user.savedPosts && user.savedPosts.includes(currentPostId);
+            const likesCount = likesArray.length;
+            
+            let html = `
+                <button class="interaction-btn ${isLiked ? 'liked' : ''}" onclick="handleLike()">
+                    ♥ ${likesCount} Likes
+                </button>
+                <button class="interaction-btn ${isSaved ? 'saved' : ''}" onclick="handleSave()">
+                    🔖 Save
+                </button>
+                <button class="interaction-btn" onclick="handleShare()">
+                    ↗ Share
+                </button>
+                <button class="interaction-btn" onclick="handleDownload()">
+                    ↓ Download
+                </button>
+            `;
+            
+            document.getElementById('interactionBar').innerHTML = html;
+            
+            const commentsSection = document.getElementById('commentsSection');
+            commentsSection.style.display = 'block';
+            
+            if (!user) {
+                document.getElementById('commentForm').innerHTML = '<div class="auth-prompt">Please <a onclick="showLoginModal()">login</a> to comment</div>';
+            }
+        }
+
+        async function handleLike() {
+            if (!api.getUser()) {
+                showLoginModal();
+                return;
+            }
+            
+            const result = await api.likePost(currentPostId);
+            if (result.success) {
+                currentPost.likes = result.likesArray || [];
+                setupInteractions();
+            } else {
+                alert(result.error || 'Error liking post');
+            }
+        }
+
+        async function handleSave() {
+            if (!api.getUser()) {
+                showLoginModal();
+                return;
+            }
+            
+            const result = await api.savePost(currentPostId);
+            if (result.success) {
+                const user = api.getUser();
+                user.savedPosts = result.savedPosts;
+                api.setUser(user);
+                setupInteractions();
+            }
+        }
+
+        async function createContentImageBlob() {
+            if (document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
+
+            const targetElement = document.getElementById('postContainer');
+            if (!targetElement) {
+                throw new Error('Post content element not found');
+            }
+
+            const canvas = await html2canvas(targetElement, {
+                useCORS: true,
+                backgroundColor: null,
+                scale: Math.min(3, Math.max(2, window.devicePixelRatio || 1)),
+                scrollX: 0,
+                scrollY: 0,
+                onclone: (clonedDoc) => {
+                    const clonedContainer = clonedDoc.getElementById('postContainer');
+                    if (!clonedContainer) {
+                        return;
+                    }
+
+                    const clonedInteractionBar = clonedContainer.querySelector('#interactionBar');
+                    if (clonedInteractionBar) {
+                        clonedInteractionBar.remove();
+                    }
+
+                    const clonedNavLinks = clonedContainer.querySelector('#navLinks');
+                    if (clonedNavLinks) {
+                        clonedNavLinks.remove();
+                    }
+                }
+            });
+
+            return new Promise((resolve, reject) => {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Failed to capture image'));
+                    }
+                }, 'image/png');
+            });
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function handleShare() {
+            try {
+                const blob = await createContentImageBlob();
+                const fileName = `${currentPost.slug || 'dead-poet-post'}.png`;
+                const shareFile = new File([blob], fileName, { type: 'image/png' });
+                const shareDataWithImage = {
+                    title: currentPost.title,
+                    text: `${currentPost.title} ~ ${currentPost.author}`,
+                    files: [shareFile],
+                    url: window.location.href
+                };
+
+                if (navigator.share) {
+                    if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+                        await navigator.share(shareDataWithImage);
+                        return;
+                    }
+
+                    try {
+                        await navigator.share(shareDataWithImage);
+                        return;
+                    } catch (shareError) {
+                        if (shareError && shareError.name === 'AbortError') {
+                            return;
+                        }
+                    }
+                }
+
+                downloadBlob(blob, fileName);
+                alert('Post content image downloaded. Upload this image in Instagram post/story.');
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
+                console.error('Share error:', error);
+                alert('Unable to share as image right now. Please try again.');
+            }
+        }
+
+        async function handleDownload() {
+            await api.downloadPost(currentPostId);
+            try {
+                const blob = await createContentImageBlob();
+                const fileName = `${currentPost.slug || 'dead-poet-post'}.png`;
+                downloadBlob(blob, fileName);
+                alert('Downloaded only post content as image.');
+            } catch (error) {
+                console.error('Download image error:', error);
+                alert('Could not create image download right now. Please try again.');
+            }
+        }
+
+        async function submitComment() {
+            if (!api.getUser()) {
+                showLoginModal();
+                return;
+            }
+            
+            const text = document.getElementById('commentInput').value.trim();
+            if (!text) return;
+            
+            const result = await api.commentPost(currentPostId, text);
+            if (result.success) {
+                loadComments();
+                document.getElementById('commentInput').value = '';
+            } else {
+                alert(result.error || 'Failed to post comment');
+            }
+        }
+
+        async function loadComments() {
+            const data = await api.getPost(currentPost.slug);
+            if (data.success && data.post.comments && data.post.comments.length > 0) {
+                document.getElementById('commentsList').innerHTML = data.post.comments.map(c => `
+                    <div class="comment">
+                        <span class="comment-author">${c.userName || 'Anonymous'}</span>
+                        <div class="comment-text">${c.text}</div>
+                        <small style="color: var(--text-soft);">${new Date(c.createdAt).toLocaleDateString()}</small>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('commentsList').innerHTML = '<p style="color: var(--text-soft); font-size: 0.8rem;">No comments yet</p>';
+            }
+        }
+
+        async function setupNavigation() {
+            const params = new URLSearchParams(window.location.search);
+            const category = currentPost.category === 'poem' ? 'poem' : 'story';
+            const language = currentPost.language;
+            
+            const response = await api.getPosts(category, language);
+            if (response.success && response.posts.length > 0) {
+                const posts = response.posts;
+                const currentIndex = posts.findIndex(p => p._id === currentPostId);
+                
+                let navHtml = '';
+                if (currentIndex > 0) {
+                    navHtml += `<a href="post.html?slug=${posts[currentIndex - 1].slug}">← Previous</a>`;
+                }
+                if (currentIndex < posts.length - 1) {
+                    navHtml += `<a href="post.html?slug=${posts[currentIndex + 1].slug}">Next →</a>`;
+                }
+                document.getElementById('navLinks').innerHTML = navHtml;
+            }
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('active');
+        }
+
+        async function signInWithGoogle() {
+            firebase.initializeApp(firebaseConfig);
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                const result = await firebase.auth().signInWithPopup(provider);
+                const idToken = await result.user.getIdToken();
+                
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    api.setUser(data.user);
+                    closeLoginModal();
+                    loadPost();
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Login failed');
+            }
+        }
+
+        function showLoginPrompt() {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            signInWithGoogle();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadPost);
+    </script>
+    <script src="script.js" defer></script>
+</body>
+</html>
