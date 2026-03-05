@@ -973,6 +973,8 @@
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             checkAdmin();
+        } else {
+            window.location.href = 'login.html';
         }
 
         firebase.auth().onAuthStateChanged(async (user) => {
