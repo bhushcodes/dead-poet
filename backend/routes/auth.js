@@ -31,7 +31,18 @@ function getAdminEmails() {
 router.post('/google', async (req, res) => {
   try {
     const { idToken, displayName, photoURL, email } = req.body;
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (verifyError) {
+      console.error('Token verification failed:', verifyError.message);
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid login token. Please try again.' 
+      });
+    }
+    
     const firebaseUser = await admin.auth().getUser(decodedToken.uid).catch(() => null);
 
     const firstNonEmpty = (...values) => {
