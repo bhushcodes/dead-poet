@@ -614,24 +614,36 @@
                 .map((provider) => provider && provider.displayName)
                 .find((value) => typeof value === 'string' && value.trim()) || '';
 
-            const idToken = await firebaseUser.getIdToken();
-            const response = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    idToken,
+            try {
+                const idToken = await firebaseUser.getIdToken();
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken,
+                        email: firebaseUser.email || '',
+                        displayName: firebaseUser.displayName || providerName || '',
+                        photoURL: firebaseUser.photoURL || providerPhoto || ''
+                    })
+                });
+
+                const data = await parseApiJson(response);
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Could not sync session');
+                }
+
+                currentUser = data.user;
+            } catch (error) {
+                console.warn('Backend sync failed, using local user');
+                currentUser = {
+                    uid: firebaseUser.uid,
                     email: firebaseUser.email || '',
-                    displayName: firebaseUser.displayName || providerName || '',
-                    photoURL: firebaseUser.photoURL || providerPhoto || ''
-                })
-            });
-
-            const data = await parseApiJson(response);
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Could not sync session');
+                    displayName: firebaseUser.displayName || providerName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User'),
+                    photoURL: firebaseUser.photoURL || providerPhoto || '',
+                    role: 'user'
+                };
             }
-
-            currentUser = data.user;
+            
             localStorage.setItem('user', JSON.stringify(currentUser));
             return currentUser;
         }

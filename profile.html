@@ -409,6 +409,11 @@
         }
 
         async function syncUserFromToken(authUser) {
+            if (!authUser) {
+                console.warn('No auth user, using local user');
+                return;
+            }
+            
             const providerPhoto = (authUser.providerData || [])
                 .map((provider) => provider && provider.photoURL)
                 .find((value) => typeof value === 'string' && value.trim()) || '';
@@ -769,14 +774,21 @@
         }
 
         async function bootstrap() {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+            }
+            
             const authUser = firebase.auth().currentUser;
-            if (!authUser) {
+            if (!authUser && !currentUser) {
                 window.location.href = 'login.html';
                 return;
             }
 
             await syncUserFromToken(authUser);
-            await loadProfileDetails();
+            if (currentUser && currentUser.uid) {
+                await loadProfileDetails();
+            }
             await loadActivity('saved');
         }
 
