@@ -2,6 +2,66 @@ const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
 const User = require('../models/User');
+const { posts: defaultPosts } = require('../migrate');
+
+let seedChecked = false;
+let seedPromise = null;
+
+async function ensureSeededPosts() {
+  if (seedChecked) {
+    return;
+  }
+
+  if (seedPromise) {
+    await seedPromise;
+    return;
+  }
+
+  seedPromise = (async () => {
+    const count = await Post.countDocuments();
+
+    if (count > 0) {
+      seedChecked = true;
+      return;
+    }
+
+    if (!Array.isArray(defaultPosts) || !defaultPosts.length) {
+      seedChecked = true;
+      return;
+    }
+
+    try {
+      await Post.insertMany(defaultPosts, { ordered: false });
+      console.log(`Seeded ${defaultPosts.length} default posts`);
+    } catch (error) {
+      const hasOnlyDuplicateIssues = error && (
+        error.code === 11000 ||
+        (Array.isArray(error.writeErrors) && error.writeErrors.length > 0)
+      );
+
+      if (!hasOnlyDuplicateIssues) {
+        throw error;
+      }
+    }
+
+    seedChecked = true;
+  })();
+
+  try {
+    await seedPromise;
+  } finally {
+    seedPromise = null;
+  }
+}
+
+router.use(async (_req, _res, next) => {
+  try {
+    await ensureSeededPosts();
+  } catch (error) {
+    console.error('Post seeding failed:', error);
+  }
+  next();
+});
 
 router.get('/', async (req, res) => {
   try {

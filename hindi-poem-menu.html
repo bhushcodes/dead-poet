@@ -85,14 +85,37 @@
         function updateUserSection() { const savedUser = localStorage.getItem('user'); const userSection = document.getElementById('userSection'); if (savedUser) { const user = JSON.parse(savedUser); userSection.innerHTML = '<a href="profile.html" class="user-btn"><img src="' + (user.photoURL || 'https://www.google.com/favicon.ico') + '" class="user-avatar" alt="Profile"><span class="user-name">' + (user.displayName || 'Profile') + '</span></a><button class="user-btn" onclick="logout()">LOGOUT</button>'; } else { userSection.innerHTML = '<a href="login.html" class="user-btn primary">LOGIN</a>'; } }
         function logout() { localStorage.removeItem('user'); updateUserSection(); window.location.href = 'menu.html'; }
         updateUserSection();
+
+        const fallbackPosts = [
+            { title: 'मूल्यवत्ता', href: 'post.html?slug=mulyavatta' },
+            { title: 'निर्णय', href: 'post.html?slug=nirnay' },
+            { title: 'उलझन', href: 'post.html?slug=uljhan' },
+            { title: 'प्रश्न', href: 'post.html?slug=prashn' },
+            { title: 'अवशेष', href: 'post.html?slug=avashesha' }
+        ];
+
+        function renderFallback(container) {
+            let html = '<h1>कविताओं की सूची</h1>';
+            fallbackPosts.forEach((post) => {
+                html += '<a href="' + post.href + '"><p>' + post.title + '</p></a>';
+            });
+            container.innerHTML = html;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const container = document.getElementById('poemList');
-            const response = await api.getPosts('poem', 'hindi');
-            if (response.success && response.posts.length > 0) {
-                let html = '<h1>कविताओं की सूची</h1>';
-                response.posts.forEach(post => { html += '<a href="post.html?slug=' + post.slug + '"><p>' + post.title + '</p></a>'; });
-                container.innerHTML = html;
+            try {
+                const response = await api.getPosts('poem', 'hindi');
+                if (response.success && Array.isArray(response.posts) && response.posts.length > 0) {
+                    let html = '<h1>कविताओं की सूची</h1>';
+                    response.posts.forEach(post => { html += '<a href="post.html?slug=' + post.slug + '"><p>' + post.title + '</p></a>'; });
+                    container.innerHTML = html;
+                    return;
+                }
+            } catch (_error) {
             }
+
+            renderFallback(container);
         });
     </script>
 </body>

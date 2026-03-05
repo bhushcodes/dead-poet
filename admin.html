@@ -51,11 +51,21 @@
             align-items: center;
             gap: 1rem;
         }
+
+        .user-name {
+            font-size: 0.68rem;
+            color: var(--text-soft);
+            max-width: 14rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         
         .user-info img {
             width: 40px;
             height: 40px;
             border-radius: 50%;
+            object-fit: cover;
         }
         
         .logout-btn {
@@ -66,6 +76,17 @@
             border-radius: 0.5rem;
             cursor: pointer;
             font-family: inherit;
+        }
+
+        .avatar-btn {
+            background: rgba(65, 106, 217, 0.12);
+            color: var(--text);
+            border: 1px solid rgba(65, 106, 217, 0.26);
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.68rem;
         }
         
         .admin-container {
@@ -292,6 +313,60 @@
             gap: 0.5rem;
             margin-top: 1rem;
         }
+
+        .admin-auth-fields {
+            margin-top: 1rem;
+            display: grid;
+            gap: 0.55rem;
+            text-align: left;
+        }
+
+        .admin-auth-fields input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 0.55rem;
+            padding: 0.68rem 0.75rem;
+            font: inherit;
+            color: var(--text);
+            background: #fff;
+        }
+
+        .admin-auth-fields button {
+            width: 100%;
+            background: var(--accent);
+            border: none;
+            border-radius: 0.55rem;
+            color: #fff;
+            padding: 0.72rem 0.85rem;
+            font: inherit;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .admin-auth-note {
+            margin-top: 0.7rem;
+            font-size: 0.78rem;
+            color: var(--text-soft);
+        }
+
+        @media (max-width: 820px) {
+            .admin-header {
+                padding: 0.9rem 1rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.65rem;
+            }
+
+            .user-info {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 0.45rem;
+            }
+
+            .user-name {
+                max-width: 100%;
+            }
+        }
         
         .hidden { display: none !important; }
     </style>
@@ -300,11 +375,17 @@
     <div id="loginScreen" class="login-screen">
         <div class="login-box">
             <h1>Admin Login</h1>
-            <p>Sign in with Google to access admin panel</p>
+            <p>Sign in with Google or admin credentials</p>
             <button class="google-btn" onclick="signInWithGoogle()">
                 <img src="https://www.google.com/favicon.ico" width="20" alt="">
                 Sign in with Google
             </button>
+            <div class="admin-auth-fields">
+                <input id="adminEmailInput" type="email" placeholder="Admin email" autocomplete="email">
+                <input id="adminPasswordInput" type="password" placeholder="Admin password" autocomplete="current-password">
+                <button type="button" onclick="signInWithEmailPassword()">Sign in with Email</button>
+            </div>
+            <p class="admin-auth-note">Only users with admin role can access this panel.</p>
         </div>
     </div>
 
@@ -313,7 +394,9 @@
             <h1>Dead Poet Admin</h1>
             <div class="user-info">
                 <img id="userPhoto" src="" alt="">
-                <span id="userName"></span>
+                <span id="userName" class="user-name"></span>
+                <input id="adminAvatarInput" type="file" accept="image/*" style="display: none;">
+                <button class="avatar-btn" type="button" onclick="triggerAvatarUpload()">Change PFP</button>
                 <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </header>
@@ -479,29 +562,166 @@
 
         let currentUser = null;
 
+        function normalizePhotoURL(url) {
+            if (!url || typeof url !== 'string') {
+                return '';
+            }
+            const trimmed = url.trim();
+            if (!trimmed) {
+                return '';
+            }
+            if (trimmed.startsWith('http')) {
+                return trimmed;
+            }
+            return `${window.location.origin}${trimmed}`;
+        }
+
+        function updateAdminUserHeader() {
+            if (!currentUser) {
+                return;
+            }
+
+            const photo = normalizePhotoURL(currentUser.photoURL) || 'https://www.google.com/favicon.ico';
+            const name = currentUser.displayName || currentUser.email || 'Admin';
+
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userPhoto').src = photo;
+        }
+
+        async function syncBackendSession(firebaseUser) {
+            const providerPhoto = (firebaseUser.providerData || [])
+                .map((provider) => provider && provider.photoURL)
+                .find((value) => typeof value === 'string' && value.trim()) || '';
+            const providerName = (firebaseUser.providerData || [])
+                .map((provider) => provider && provider.displayName)
+                .find((value) => typeof value === 'string' && value.trim()) || '';
+
+            const idToken = await firebaseUser.getIdToken();
+            const response = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    idToken,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || providerName || '',
+                    photoURL: firebaseUser.photoURL || providerPhoto || ''
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Could not sync session');
+            }
+
+            currentUser = data.user;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            return currentUser;
+        }
+
         async function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
             try {
                 const result = await firebase.auth().signInWithPopup(provider);
-                const idToken = await result.user.getIdToken();
-                
-                const response = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    checkAdmin();
-                } else {
-                    alert('Login failed: ' + data.error);
-                }
+                await syncBackendSession(result.user);
+                checkAdmin();
             } catch (error) {
                 console.error(error);
-                alert('Login failed');
+                alert('Login failed: ' + (error.message || 'Unknown error'));
+            }
+        }
+
+        async function signInWithEmailPassword() {
+            const email = (document.getElementById('adminEmailInput').value || '').trim();
+            const password = document.getElementById('adminPasswordInput').value || '';
+
+            if (!email || !password) {
+                alert('Please enter admin email and password');
+                return;
+            }
+
+            try {
+                const result = await firebase.auth().signInWithEmailAndPassword(email, password);
+                await syncBackendSession(result.user);
+                checkAdmin();
+            } catch (error) {
+                console.error(error);
+                alert('Login failed: ' + (error.message || 'Invalid admin credentials'));
+            }
+        }
+
+        function triggerAvatarUpload() {
+            if (!currentUser) {
+                return;
+            }
+            const input = document.getElementById('adminAvatarInput');
+            if (input) {
+                input.click();
+            }
+        }
+
+        async function uploadAdminAvatar(file) {
+            if (!file || !currentUser) {
+                return;
+            }
+
+            if (!(file.type || '').startsWith('image/')) {
+                alert('Please select an image file.');
+                return;
+            }
+
+            if (file.size > 3 * 1024 * 1024) {
+                alert('Image must be under 3MB.');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('avatar', file);
+
+                const uploadRes = await fetch(`/api/users/${currentUser.uid}/avatar`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': currentUser.uid
+                    },
+                    body: formData
+                });
+
+                const uploadData = await uploadRes.json();
+                if (!uploadData.success) {
+                    throw new Error(uploadData.error || 'Upload failed');
+                }
+
+                const photoURL = normalizePhotoURL(uploadData.photoURL);
+
+                const authUser = firebase.auth().currentUser;
+                if (authUser) {
+                    try {
+                        await authUser.updateProfile({ photoURL });
+                    } catch (_error) {
+                    }
+                }
+
+                const saveRes = await fetch(`/api/users/${currentUser.uid}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': currentUser.uid
+                    },
+                    body: JSON.stringify({ photoURL })
+                });
+
+                const saveData = await saveRes.json();
+                if (!saveData.success) {
+                    throw new Error(saveData.error || 'Could not save avatar');
+                }
+
+                currentUser = saveData.user;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                updateAdminUserHeader();
+                alert('Profile picture updated successfully.');
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Failed to update profile picture');
             }
         }
 
@@ -515,6 +735,7 @@
             if (currentUser && currentUser.role === 'admin') {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
+                updateAdminUserHeader();
                 loadDashboard();
             } else {
                 alert('You are not authorized to access admin panel');
@@ -723,6 +944,12 @@
             }
         });
 
+        document.getElementById('adminAvatarInput').addEventListener('change', async (event) => {
+            const file = event.target.files && event.target.files[0];
+            await uploadAdminAvatar(file);
+            event.target.value = '';
+        });
+
         // Check for existing session
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
@@ -732,17 +959,11 @@
 
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user && !currentUser) {
-                const idToken = await user.getIdToken();
-                const response = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
+                try {
+                    await syncBackendSession(user);
                     checkAdmin();
+                } catch (error) {
+                    console.error(error);
                 }
             }
         });

@@ -260,6 +260,25 @@
 
         let currentPost = null;
         let currentPostId = null;
+        const staticPostFallbackBySlug = {
+            aathvan: 'आठवण.html',
+            anantata: 'अनंतता.html',
+            mulyavatta: 'मूल्यवत्ता.html',
+            nirnay: 'निर्णय.html',
+            uljhan: 'उलझन.html',
+            prashn: 'प्रश्न.html',
+            avashesha: 'अवशेष.html',
+            unheard: 'Unheard.html',
+            bound: 'Bound.html',
+            'last-year': 'Last-Year.html',
+            'khoya-man': 'खोया-मन.html',
+            'kaalanubhav-p1': 'Kaalanubhav-by-Bhushan-p1.html',
+            'kaalanubhav-p2': 'Kaalanubhav-by-Bhushan-p2.html',
+            'kaalanubhav-p3': 'Kaalanubhav-by-Bhushan-p3.html',
+            'kaalanubhav-p4': 'Kaalanubhav-by-Bhushan-p4.html',
+            'kaalanubhav-p5': 'Kaalanubhav-by-Bhushan-p5.html',
+            'kaalanubhav-p6': 'Kaalanubhav-by-Bhushan-p6.html'
+        };
 
         async function loadPost() {
             const params = new URLSearchParams(window.location.search);
@@ -273,6 +292,11 @@
             const data = await api.getPost(slug);
             
             if (!data.success) {
+                const staticFallback = staticPostFallbackBySlug[slug];
+                if (staticFallback) {
+                    window.location.href = staticFallback;
+                    return;
+                }
                 window.location.href = 'menu.html';
                 return;
             }

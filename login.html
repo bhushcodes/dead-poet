@@ -229,11 +229,23 @@
         }
 
         async function saveBackendSession(user) {
+            const providerPhoto = (user.providerData || [])
+                .map((provider) => provider && provider.photoURL)
+                .find((value) => typeof value === 'string' && value.trim()) || '';
+            const providerName = (user.providerData || [])
+                .map((provider) => provider && provider.displayName)
+                .find((value) => typeof value === 'string' && value.trim()) || '';
+
             const idToken = await user.getIdToken();
             const response = await fetch('/api/auth/google', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken })
+                body: JSON.stringify({
+                    idToken,
+                    email: user.email || '',
+                    displayName: user.displayName || providerName || '',
+                    photoURL: user.photoURL || providerPhoto || ''
+                })
             });
 
             const data = await response.json();
@@ -241,8 +253,15 @@
                 throw new Error(data.error || 'Could not sync login with backend');
             }
 
-            localStorage.setItem('user', JSON.stringify(data.user));
-            return data.user;
+            const mergedUser = {
+                ...data.user,
+                displayName: data.user.displayName || user.displayName || providerName || (user.email ? user.email.split('@')[0] : 'User'),
+                email: data.user.email || user.email || '',
+                photoURL: data.user.photoURL || user.photoURL || providerPhoto || ''
+            };
+
+            localStorage.setItem('user', JSON.stringify(mergedUser));
+            return mergedUser;
         }
 
         async function completeLogin(user, successText) {

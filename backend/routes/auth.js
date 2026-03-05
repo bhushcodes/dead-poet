@@ -20,35 +20,77 @@ if (!admin.apps.length) {
   });
 }
 
+function getAdminEmails() {
+  return new Set(
+    [process.env.ADMIN_EMAIL, ...(process.env.ADMIN_EMAILS || '').split(',')]
+      .map((email) => (email || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
 router.post('/google', async (req, res) => {
   try {
-    const { idToken } = req.body;
+    const { idToken, displayName, photoURL, email } = req.body;
     const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebaseUser = await admin.auth().getUser(decodedToken.uid).catch(() => null);
+
+    const firstNonEmpty = (...values) => {
+      for (const value of values) {
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+      return '';
+    };
+
+    const tokenEmail = firstNonEmpty(decodedToken.email, firebaseUser?.email, email);
+    const tokenName = firstNonEmpty(decodedToken.name, firebaseUser?.displayName, displayName);
+    const tokenPhoto = firstNonEmpty(decodedToken.picture, firebaseUser?.photoURL, photoURL);
+    const isConfiguredAdmin = tokenEmail
+      ? getAdminEmails().has(tokenEmail.toLowerCase())
+      : false;
     
     let user = await User.findOne({ uid: decodedToken.uid });
     
     if (!user) {
       user = new User({
         uid: decodedToken.uid,
-        email: decodedToken.email,
-        displayName: decodedToken.name || decodedToken.email.split('@')[0],
-        photoURL: decodedToken.picture
+        email: tokenEmail,
+        displayName: tokenName || (tokenEmail ? tokenEmail.split('@')[0] : 'User'),
+        photoURL: tokenPhoto,
+        role: isConfiguredAdmin ? 'admin' : 'user'
       });
       await user.save();
     } else {
       let changed = false;
-      if (decodedToken.email && user.email !== decodedToken.email) {
-        user.email = decodedToken.email;
+      const currentPhoto = (user.photoURL || '').trim();
+
+      if (tokenEmail && user.email !== tokenEmail) {
+        user.email = tokenEmail;
         changed = true;
       }
-      if (decodedToken.name && (!user.displayName || !user.displayName.trim())) {
-        user.displayName = decodedToken.name;
+
+      if (tokenName && (!user.displayName || !user.displayName.trim())) {
+        user.displayName = tokenName;
         changed = true;
       }
-      if (decodedToken.picture && (!user.photoURL || !user.photoURL.trim())) {
-        user.photoURL = decodedToken.picture;
+
+      const shouldSyncGooglePhoto = Boolean(tokenPhoto) && (
+        !currentPhoto ||
+        /googleusercontent\.com|googleapis\.com/.test(currentPhoto) ||
+        currentPhoto === 'https://www.google.com/favicon.ico'
+      );
+
+      if (shouldSyncGooglePhoto && user.photoURL !== tokenPhoto) {
+        user.photoURL = tokenPhoto;
         changed = true;
       }
+
+      if (isConfiguredAdmin && user.role !== 'admin') {
+        user.role = 'admin';
+        changed = true;
+      }
+
       if (changed) {
         await user.save();
       }

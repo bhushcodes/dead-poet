@@ -140,6 +140,8 @@ function updateFixedUiOffset() {
 
     const navElement = document.querySelector('.app-nav.is-visible');
     const pickerElement = document.querySelector('.section-lang-picker.is-visible');
+    const userSection = document.querySelector('.user-section');
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
     if (navElement && pickerElement) {
         const navBottom = Math.ceil(navElement.getBoundingClientRect().bottom);
@@ -148,7 +150,32 @@ function updateFixedUiOffset() {
         pickerElement.style.removeProperty('top');
     }
 
+    if (userSection) {
+        if (isMobile) {
+            const anchorElement = pickerElement || navElement;
+            const anchorBottom = anchorElement
+                ? Math.ceil(anchorElement.getBoundingClientRect().bottom)
+                : 0;
+
+            userSection.classList.add('is-mobile-toolbar');
+            userSection.style.top = `${anchorBottom + 8}px`;
+            userSection.style.left = '50%';
+            userSection.style.right = 'auto';
+            userSection.style.transform = 'translateX(-50%)';
+        } else {
+            userSection.classList.remove('is-mobile-toolbar');
+            userSection.style.removeProperty('top');
+            userSection.style.removeProperty('left');
+            userSection.style.removeProperty('right');
+            userSection.style.removeProperty('transform');
+        }
+    }
+
     const fixedUiElements = [navElement, pickerElement].filter(Boolean);
+
+    if (isMobile && userSection) {
+        fixedUiElements.push(userSection);
+    }
 
     if (!fixedUiElements.length) {
         document.body.style.paddingTop = `${topPaddingState.basePaddingTop}px`;
