@@ -829,19 +829,28 @@
         async function bootstrap() {
             const savedUser = localStorage.getItem('user');
             if (savedUser) {
-                currentUser = JSON.parse(savedUser);
+                try {
+                    currentUser = JSON.parse(savedUser);
+                } catch (e) {
+                    console.error('Error parsing saved user:', e);
+                }
             }
             
             const authUser = firebase.auth().currentUser;
+            
             if (!authUser && !currentUser) {
                 window.location.href = 'login.html';
                 return;
             }
 
-            await syncUserFromToken(authUser);
+            if (authUser) {
+                await syncUserFromToken(authUser);
+            }
+            
             if (currentUser && currentUser.uid) {
                 await loadProfileDetails();
             }
+            
             await loadActivity('saved');
         }
 
