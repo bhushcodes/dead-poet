@@ -301,12 +301,10 @@
                 }
             }
 
-            if (lastError && /HTML instead of JSON|status 5\d\d|Failed to fetch|Network/i.test(lastError.message || '')) {
+            if (lastError) {
                 localStorage.setItem('user', JSON.stringify(localFallbackUser));
                 return localFallbackUser;
             }
-
-            throw (lastError || new Error('Could not sync login with backend'));
         }
 
         async function completeLogin(user, successText) {
