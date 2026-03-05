@@ -400,6 +400,18 @@
             return '';
         }
 
+        async function parseApiJson(response) {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                    throw new Error('Server returned HTML');
+                }
+                throw new Error('Invalid JSON');
+            }
+        }
+
         function setAvatar(url) {
             const avatar = document.getElementById('avatar');
             avatar.src = url && url.trim() ? url : FALLBACK_AVATAR;
@@ -438,7 +450,7 @@
 
             try {
                 const idToken = await authUser.getIdToken();
-                const response = await fetch('/api/auth/google', {
+                const data = await fetchWithRetry('/api/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -448,8 +460,7 @@
                         photoURL: authUser.photoURL || providerPhoto || ''
                     })
                 });
-                const data = await parseApiJson(response);
-                if (response.ok && data.success && data.user) {
+                if (data && data.success && data.user) {
                     const syncedUser = {
                         ...data.user,
                         displayName: firstNonEmpty(data.user.displayName, authUser.displayName, providerName, authUser.email ? authUser.email.split('@')[0] : ''),
@@ -464,7 +475,7 @@
             }
 
             try {
-                const syncResponse = await fetch('/api/auth/sync', {
+                const syncData = await fetchWithRetry('/api/auth/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -474,8 +485,7 @@
                         photoURL: authUser.photoURL || providerPhoto || ''
                     })
                 });
-                const syncData = await parseApiJson(syncResponse);
-                if (syncResponse.ok && syncData.success && syncData.user) {
+                if (syncData && syncData.success && syncData.user) {
                     setLocalUser(syncData.user);
                     return;
                 }
@@ -491,9 +501,8 @@
                 console.warn('No user logged in');
                 return;
             }
-            const response = await fetch(`/api/users/${currentUser.uid}`);
-            const data = await parseApiJson(response);
-            if (!data.success) {
+            const data = await fetchWithRetry(`/api/users/${currentUser.uid}`);
+            if (!data || !data.success) {
                 console.warn('Failed to load profile details from backend');
                 return;
             }
@@ -577,20 +586,18 @@
 
             try {
                 if (tab === 'saved') {
-                    const savedRes = await fetch(`/api/users/saved/${currentUser.uid}`);
-                    const savedData = await parseApiJson(savedRes);
-                    if (!savedData.success) {
-                        throw new Error(savedData.error || 'Failed to load saved posts');
+                    const savedData = await fetchWithRetry(`/api/users/saved/${currentUser.uid}`);
+                    if (!savedData || !savedData.success) {
+                        throw new Error(savedData?.error || 'Failed to load saved posts');
                     }
                     renderSaved(savedData.posts || []);
                     return;
                 }
 
                 if (!activityCache) {
-                    const activityRes = await fetch(`/api/users/${currentUser.uid}/activity`);
-                    const activityData = await parseApiJson(activityRes);
-                    if (!activityData.success) {
-                        throw new Error(activityData.error || 'Failed to load activity');
+                    const activityData = await fetchWithRetry(`/api/users/${currentUser.uid}/activity`);
+                    if (!activityData || !activityData.success) {
+                        throw new Error(activityData?.error || 'Failed to load activity');
                     }
                     activityCache = activityData;
                 }
