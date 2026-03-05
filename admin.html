@@ -1010,25 +1010,37 @@
             event.target.value = '';
         });
 
-        // Check for existing session
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-            checkAdmin();
-        } else {
-            window.location.href = 'login.html';
+        // Check for existing session - wait for Firebase auth first
+        async function initAdmin() {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                checkAdmin();
+            }
+            
+            // Also check Firebase auth state
+            const authUser = firebase.auth().currentUser;
+            if (authUser && !currentUser) {
+                await syncBackendSession(authUser);
+                checkAdmin();
+            }
         }
 
         firebase.auth().onAuthStateChanged(async (user) => {
-            if (user && !currentUser) {
-                try {
+            const savedUser = localStorage.getItem('user');
+            
+            if (user) {
+                if (!currentUser || !savedUser) {
                     await syncBackendSession(user);
-                    checkAdmin();
-                } catch (error) {
-                    console.error(error);
                 }
+                checkAdmin();
+            } else if (!savedUser && !currentUser) {
+                // Not logged in anywhere, redirect to login
+                window.location.href = 'login.html';
             }
         });
+
+        initAdmin();
     </script>
 </body>
 </html>
