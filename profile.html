@@ -614,8 +614,6 @@
                 return;
             }
 
-            console.log('Updating profile for uid:', currentUser.uid);
-            
             try {
                 const response = await fetch(`/api/users/${currentUser.uid}`, {
                     method: 'PUT',
@@ -626,9 +624,13 @@
                     body: JSON.stringify({ displayName })
                 });
                 
-                console.log('Response status:', response.status);
-                const data = await parseApiJson(response);
-                console.log('Response data:', data);
+                let data;
+                try {
+                    data = JSON.parse(await response.text());
+                } catch (e) {
+                    setStatus('profileStatus', 'Invalid response from server', 'is-error');
+                    return;
+                }
                 
                 if (!data.success) {
                     setStatus('profileStatus', data.error || 'Could not update profile', 'is-error');
@@ -640,7 +642,7 @@
                 setStatus('profileStatus', 'Profile updated successfully.', 'is-success');
             } catch (error) {
                 console.error(error);
-                setStatus('profileStatus', error.message || 'Failed to update profile.', 'is-error');
+                setStatus('profileStatus', 'Failed to update profile. Please try again.', 'is-error');
             }
         }
 
