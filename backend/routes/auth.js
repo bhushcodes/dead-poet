@@ -109,8 +109,13 @@ router.post('/google', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Auth google error:', error.message, error.stack);
+    const errorMessage = error.message.includes('Decoding')
+      ? 'Invalid login token. Please try again.'
+      : error.message.includes('verifyIdToken')
+      ? 'Login verification failed. Please try again.'
+      : error.message;
+    res.status(500).json({ success: false, error: errorMessage });
   }
 });
 
