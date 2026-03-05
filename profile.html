@@ -429,7 +429,9 @@
             });
             const data = await parseApiJson(response);
             if (!data.success) {
-                throw new Error(data.error || 'Auth sync failed');
+                console.warn('Backend sync failed, using local user');
+                setLocalUser(currentUser);
+                return;
             }
 
             const syncedUser = {
@@ -446,7 +448,8 @@
             const response = await fetch(`/api/users/${currentUser.uid}`);
             const data = await parseApiJson(response);
             if (!data.success) {
-                throw new Error(data.error || 'Failed to load profile');
+                console.warn('Failed to load profile details from backend');
+                return;
             }
 
             const merged = {
