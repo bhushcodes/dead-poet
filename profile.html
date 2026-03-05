@@ -614,16 +614,9 @@
                 return;
             }
 
+            console.log('Updating profile for uid:', currentUser.uid);
+            
             try {
-                const authUser = firebase.auth().currentUser;
-                if (authUser) {
-                    try {
-                        await authUser.updateProfile({ displayName });
-                    } catch (e) {
-                        console.warn('Firebase profile update failed:', e.message);
-                    }
-                }
-
                 const response = await fetch(`/api/users/${currentUser.uid}`, {
                     method: 'PUT',
                     headers: {
@@ -633,7 +626,9 @@
                     body: JSON.stringify({ displayName })
                 });
                 
+                console.log('Response status:', response.status);
                 const data = await parseApiJson(response);
+                console.log('Response data:', data);
                 
                 if (!data.success) {
                     setStatus('profileStatus', data.error || 'Could not update profile', 'is-error');
