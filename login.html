@@ -337,7 +337,12 @@
                 const result = await firebase.auth().signInWithEmailAndPassword(email, password);
                 await completeLogin(result.user, 'Logged in successfully. Redirecting...');
             } catch (error) {
-                showError(humanizeAuthError(error));
+                const errorMsg = humanizeAuthError(error);
+                if (errorMsg.includes('network') || errorMsg.includes('failed')) {
+                    showError('Network error. Please check your connection and try again.');
+                } else {
+                    showError(errorMsg);
+                }
                 setButtonsDisabled(false);
             }
         }
@@ -362,7 +367,12 @@
                 const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
                 await completeLogin(result.user, 'Account created! Redirecting...');
             } catch (error) {
-                showError(humanizeAuthError(error));
+                const errorMsg = humanizeAuthError(error);
+                if (errorMsg.includes('network') || errorMsg.includes('failed')) {
+                    showError('Network error. Please check your connection and try again.');
+                } else {
+                    showError(errorMsg);
+                }
                 setButtonsDisabled(false);
             }
         }
